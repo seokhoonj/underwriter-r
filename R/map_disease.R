@@ -1,26 +1,3 @@
-#' Reshape a wide clean master to one row per diagnosis code
-#'
-#' Melts the diagnosis columns (`kcd0..kcd4`) to long form: one row per diagnosis
-#' code, carrying every other column. `sub_kcd` is `0` for the main diagnosis
-#' (`kcd0`) and `1` for sub-diagnoses.
-#'
-#' @param clean A cleansed wide master from [clean_icis()].
-#' @param kcd_cols Character vector of diagnosis-code column names
-#'   (default `kcd0..kcd4`).
-#' @return A long `data.table` with columns `kcd`, `sub_kcd`, and the carried
-#'   claim columns.
-#' @seealso [map_disease()].
-#' @export
-melt_kcd <- function(clean, kcd_cols = paste0("kcd", 0:4)) {
-  clean <- as.data.table(clean)
-  carry <- setdiff(names(clean), kcd_cols)
-  long <- melt(clean, id.vars = carry, measure.vars = kcd_cols,
-               variable.name = "ord", value.name = "kcd", na.rm = TRUE)
-  long[, sub_kcd := as.integer(as.integer(sub("kcd", "", ord)) > 0L)]   # 0 = main
-  long[, ord := NULL]
-  long[]
-}
-
 #' Map diagnosis codes to their representative disease and scope flags
 #'
 #' Joins each `kcd` to `disease_table` to attach the representative disease
