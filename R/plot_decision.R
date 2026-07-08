@@ -12,12 +12,14 @@
 #'   attribute) or `"auto_rate"` (highest auto-decided share first).
 #' @param min_label Segments whose share is at or below this are left unlabelled,
 #'   to keep thin slivers from cluttering (default `0.03`).
+#' @param title Plot title (default `"decision composition per coverage"`).
 #' @return A `ggplot` object. When `group = "auto"`, auto-decided (`1`) is blue
 #'   and manual review (`0`) is red.
 #' @seealso [tabulate_decision()].
 #' @export
 plot_decision <- function(final, group = c("auto", "category"),
-                          order = c("ruleset", "auto_rate"), min_label = 0.03) {
+                          order = c("ruleset", "auto_rate"), min_label = 0.03,
+                          title = "decision composition per coverage") {
   group <- match.arg(group)
   order <- match.arg(order)
   tab   <- tabulate_decision(final)
@@ -39,10 +41,14 @@ plot_decision <- function(final, group = c("auto", "category"),
     ggplot2::geom_text(
       ggplot2::aes(label = ifelse(ratio > min_label, round(ratio * 100), NA_real_)),
       position = ggplot2::position_stack(vjust = 0.5), na.rm = TRUE) +
-    ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.25), labels = seq(0, 100, 25)) +
-    ggplot2::labs(y = "percent", fill = group) +
+    ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.25), labels = seq(0, 100, 25),
+                                expand = ggplot2::expansion(mult = c(0, 0.02))) +
+    ggplot2::labs(title = title, y = "percent", fill = group) +
     ggplot2::theme_minimal() +
-    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5))
+    ggplot2::theme(
+      axis.text.x      = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5),
+      axis.ticks       = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank())
 
   # auto-decided (1) blue, manual review (0) red
   if (group == "auto")

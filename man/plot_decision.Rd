@@ -8,7 +8,8 @@ plot_decision(
   final,
   group = c("auto", "category"),
   order = c("ruleset", "auto_rate"),
-  min_label = 0.03
+  min_label = 0.03,
+  title = "decision composition per coverage"
 )
 }
 \arguments{
@@ -23,6 +24,8 @@ attribute) or \code{"auto_rate"} (highest auto-decided share first).}
 
 \item{min_label}{Segments whose share is at or below this are left unlabelled,
 to keep thin slivers from cluttering (default \code{0.03}).}
+
+\item{title}{Plot title (default \code{"decision composition per coverage"}).}
 }
 \value{
 A \code{ggplot} object. When \code{group = "auto"}, auto-decided (\code{1}) is blue
