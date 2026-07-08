@@ -21,8 +21,8 @@ A long \code{data.table} with columns \code{coverage}, \code{decision}, \code{ca
 \code{1} only when every code in the decision is flagged auto, \code{0} when any code
 needs manual review -- the auto/manual line is controlled by editing
 \code{decision_table}'s \code{auto} column),
-\code{n} (insured count), and \code{ratio} (\code{n} over the coverage's total, so each
-coverage's ratios sum to 1).
+\code{n} (insured count), and \code{prop} (\code{n} over the coverage's total, so each
+coverage's proportions sum to 1).
 }
 \description{
 Summarizes a per-insured final decision table (one row per id, one column per

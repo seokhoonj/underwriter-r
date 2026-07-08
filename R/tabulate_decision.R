@@ -19,8 +19,8 @@
 #'   `1` only when every code in the decision is flagged auto, `0` when any code
 #'   needs manual review -- the auto/manual line is controlled by editing
 #'   `decision_table`'s `auto` column),
-#'   `n` (insured count), and `ratio` (`n` over the coverage's total, so each
-#'   coverage's ratios sum to 1).
+#'   `n` (insured count), and `prop` (`n` over the coverage's total, so each
+#'   coverage's proportions sum to 1).
 #' @seealso [combine_decision()].
 #' @export
 tabulate_decision <- function(final, id_col = "id") {
@@ -42,8 +42,8 @@ tabulate_decision <- function(final, id_col = "id") {
     vapply(strsplit(category, ",", fixed = TRUE),
            function(codes) min(auto_by_code[codes]), integer(1)),
     levels = c(0L, 1L))]
-  out[, ratio := n / sum(n), by = coverage]
-  setcolorder(out, c("coverage", "decision", "category", "auto", "n", "ratio"))
+  out[, prop := n / sum(n), by = coverage]
+  setcolorder(out, c("coverage", "decision", "category", "auto", "n", "prop"))
   setorder(out, coverage, -n)
   out[]
 }

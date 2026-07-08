@@ -30,18 +30,18 @@ plot_decision <- function(final, group = c("auto", "category"),
     covs <- unique(tab$coverage)
     if (is.null(cols)) sort(covs) else c(intersect(cols, covs), setdiff(covs, cols))
   } else {
-    auto_rate <- tab[, .(rate = sum(ratio[auto == "1"])), by = coverage]
-    setorder(auto_rate, rate)
-    if (order == "auto_high") rev(auto_rate$coverage) else auto_rate$coverage
+    auto_prop <- tab[, .(prop = sum(prop[auto == "1"])), by = coverage]
+    setorder(auto_prop, prop)
+    if (order == "auto_high") rev(auto_prop$coverage) else auto_prop$coverage
   }
 
-  d <- tab[, .(ratio = sum(ratio)), by = c("coverage", group)]
+  d <- tab[, .(prop = sum(prop)), by = c("coverage", group)]
   d[, coverage := factor(coverage, levels = coverage_levels)]
 
-  p <- ggplot2::ggplot(d, ggplot2::aes(x = coverage, y = ratio, fill = .data[[group]])) +
+  p <- ggplot2::ggplot(d, ggplot2::aes(x = coverage, y = prop, fill = .data[[group]])) +
     ggplot2::geom_col() +
     ggplot2::geom_text(
-      ggplot2::aes(label = ifelse(ratio > min_label, round(ratio * 100), NA_real_)),
+      ggplot2::aes(label = ifelse(prop > min_label, round(prop * 100), NA_real_)),
       position = ggplot2::position_stack(vjust = 0.5), na.rm = TRUE) +
     ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.25), labels = seq(0, 100, 25)) +
     ggplot2::labs(title = title, y = "percent", fill = group) +
