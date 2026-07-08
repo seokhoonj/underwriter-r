@@ -13,14 +13,14 @@
 #'   first), or `"auto_low"` (lowest first).
 #' @param min_label Segments whose share is at or below this are left unlabelled,
 #'   to keep thin slivers from cluttering (default `0.03`).
-#' @param title Plot title (default `"decision composition per coverage"`).
+#' @param title Plot title (default `"Decision composition per coverage"`).
 #' @return A `ggplot` object. When `group = "auto"`, auto-decided (`1`) is blue
 #'   and manual review (`0`) is red.
 #' @seealso [tabulate_decision()].
 #' @export
 plot_decision <- function(final, group = c("auto", "category"),
                           order = c("column", "auto_high", "auto_low"), min_label = 0.03,
-                          title = "decision composition per coverage") {
+                          title = "Decision composition per coverage") {
   group <- match.arg(group)
   order <- match.arg(order)
   tab   <- tabulate_decision(final)

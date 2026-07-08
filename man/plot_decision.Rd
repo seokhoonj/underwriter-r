@@ -9,7 +9,7 @@ plot_decision(
   group = c("auto", "category"),
   order = c("column", "auto_high", "auto_low"),
   min_label = 0.03,
-  title = "decision composition per coverage"
+  title = "Decision composition per coverage"
 )
 }
 \arguments{
@@ -26,7 +26,7 @@ first), or \code{"auto_low"} (lowest first).}
 \item{min_label}{Segments whose share is at or below this are left unlabelled,
 to keep thin slivers from cluttering (default \code{0.03}).}
 
-\item{title}{Plot title (default \code{"decision composition per coverage"}).}
+\item{title}{Plot title (default \code{"Decision composition per coverage"}).}
 }
 \value{
 A \code{ggplot} object. When \code{group = "auto"}, auto-decided (\code{1}) is blue
