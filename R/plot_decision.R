@@ -43,13 +43,11 @@ plot_decision <- function(final, group = c("auto", "category"),
     ggplot2::geom_text(
       ggplot2::aes(label = ifelse(ratio > min_label, round(ratio * 100), NA_real_)),
       position = ggplot2::position_stack(vjust = 0.5), na.rm = TRUE) +
-    ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.25), labels = seq(0, 100, 25),
-                                expand = ggplot2::expansion(mult = c(0, 0.02))) +
+    ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.25), labels = seq(0, 100, 25)) +
     ggplot2::labs(title = title, y = "percent", fill = group) +
     ggplot2::theme_minimal() +
     ggplot2::theme(
       axis.text.x        = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5),
-      axis.ticks.x       = ggplot2::element_line(),    # keep x-axis (coverage) ticks
       panel.grid.minor   = ggplot2::element_blank(),
       panel.grid.major.x = ggplot2::element_blank())   # else the vertical gridlines peek
                                                        # above the bars and read as top ticks
