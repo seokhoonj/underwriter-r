@@ -27,5 +27,8 @@ utils::globalVariables(c(
   # decision tabulation
   "n", "prop", "category", "auto",
   # decision tracing
-  "diseases", "computed", "stored", "ok"
+  "diseases", "computed", "stored", "ok",
+  # disease relaxation experiment
+  "auto_base", "auto_relaxed", "lift", "n_flipped", "n_total",
+  "n_src", "n_id", "auto_lift"
 ))
