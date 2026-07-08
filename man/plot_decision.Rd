@@ -6,27 +6,27 @@
 \usage{
 plot_decision(
   final,
-  by = c("auto", "category"),
-  order = c("config", "auto"),
+  group = c("auto", "category"),
+  order = c("ruleset", "auto_rate"),
   min_label = 0.03
 )
 }
 \arguments{
 \item{final}{A wide final-decision table from \code{\link[=combine_decision]{combine_decision()}}.}
 
-\item{by}{The column to stack and colour by: \code{"auto"} (default) or
+\item{group}{Column to stack and colour by: \code{"auto"} (default) or
 \code{"category"}.}
 
-\item{order}{Coverage order along the x-axis: \code{"config"} (default, the
+\item{order}{Coverage order along the x-axis: \code{"ruleset"} (default, the
 coverage order defined in the rule set, from \code{final}'s \code{decision_cols}
-attribute) or \code{"auto"} (highest auto-decided share first).}
+attribute) or \code{"auto_rate"} (highest auto-decided share first).}
 
 \item{min_label}{Segments whose share is at or below this are left unlabelled,
 to keep thin slivers from cluttering (default \code{0.03}).}
 }
 \value{
-A \code{ggplot} object. When \code{by = "auto"}, auto-decided (\code{1}) is blue and
-manual review (\code{0}) is red.
+A \code{ggplot} object. When \code{group = "auto"}, auto-decided (\code{1}) is blue
+and manual review (\code{0}) is red.
 }
 \description{
 A stacked bar of each coverage's decision composition from
