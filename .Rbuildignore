@@ -1,0 +1,13 @@
+^underwriter\.Rproj$
+^\.Rproj\.user$
+^\.gitignore$
+^dev$
+^refs$
+^data-raw$
+^CLAUDE\.md$
+^\.claude$
+^AGENTS?\.md$
+^\.codex$
+^GEMINI\.md$
+^\.gemini$
+^LICENSE\.md$

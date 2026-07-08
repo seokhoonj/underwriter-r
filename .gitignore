@@ -1,0 +1,27 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# data
+*.rds
+*.xlsx
+*.xls
+*.xlsb
+*.xlsm
+*.csv
+*.7z
+*.zip
+
+dev/
+refs/
+
+# AI coding agents
+CLAUDE.md
+.claude/
+AGENTS.md
+AGENT.md
+.codex/
+GEMINI.md
+.gemini/
