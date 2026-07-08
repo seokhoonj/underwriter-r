@@ -45,7 +45,12 @@ plot_decision <- function(final, group = c("auto", "category"),
       position = ggplot2::position_stack(vjust = 0.5), na.rm = TRUE) +
     ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.25), labels = seq(0, 100, 25)) +
     ggplot2::labs(title = title, y = "percent", fill = group) +
-    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5))
+    ggplot2::theme_bw() +   # white panel, black border, no gridlines (like ggshort::theme_view)
+    ggplot2::theme(
+      axis.text.x      = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5),
+      panel.grid.major = ggplot2::element_blank(),
+      panel.grid.minor = ggplot2::element_blank(),
+      panel.border     = ggplot2::element_rect(colour = "black", fill = NA))
 
   # auto-decided (1) blue, manual review (0) red
   if (group == "auto")
