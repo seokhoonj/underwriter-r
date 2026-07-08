@@ -11,7 +11,7 @@
 #'   claim columns.
 #' @seealso [map_disease()].
 #' @export
-melt_disease_code <- function(clean, kcd_cols = paste0("kcd", 0:4)) {
+melt_kcd <- function(clean, kcd_cols = paste0("kcd", 0:4)) {
   clean <- as.data.table(clean)
   carry <- setdiff(names(clean), kcd_cols)
   long <- melt(clean, id.vars = carry, measure.vars = kcd_cols,
@@ -39,7 +39,7 @@ melt_disease_code <- function(clean, kcd_cols = paste0("kcd", 0:4)) {
 #'     `"ZZZ"`. Scopes the counts.}
 #' }
 #'
-#' @param long A long table from [melt_disease_code()].
+#' @param long A long table from [melt_kcd()].
 #' @param disease_table A lookup table with columns `kcd`, `kcd_main`, `sub_chk`,
 #'   `lookback_mon`.
 #' @return `long` with `kcd_main`, `sub_chk`, `lookback_mon`, `review`,

@@ -29,7 +29,7 @@
 #' @param method Endpoint-reconciliation basis; one of `"sdate"` (default),
 #'   `"edate"`, `"auto"`.
 #' @return A cleansed wide `data.table`, one row per (deduplicated) claim line.
-#' @seealso [filter_latest_inquiry()], [melt_disease_code()].
+#' @seealso [filter_latest_inquiry()], [melt_kcd()].
 #' @export
 clean_icis <- function(dt, kcd_cols = paste0("kcd", 0:4),
                        method = c("sdate", "edate", "auto")) {
@@ -52,7 +52,7 @@ clean_icis <- function(dt, kcd_cols = paste0("kcd", 0:4),
     !is.na(v) & grepl(",", v, fixed = TRUE)
   }))
   if (any(is_multi)) .redistribute_multi(dt, which(is_multi), kcd_cols)
-  dt[, (kcd_cols) := lapply(.SD, normalize_disease_code), .SDcols = kcd_cols]
+  dt[, (kcd_cols) := lapply(.SD, normalize_kcd), .SDcols = kcd_cols]
 
   # 4. pack codes leftward (kcd0 = main), then drop exact duplicate rows (~28% of
   #    the feed are repeated transmission lines; deduping on the final cleaned
@@ -148,7 +148,7 @@ filter_latest_inquiry <- function(dt) {
 .redistribute_multi <- function(dt, rows, kcd_cols) {
   n_codes <- length(kcd_cols)
   for (i in rows) {
-    codes <- unlist(lapply(kcd_cols, function(col) split_disease_code(dt[[col]][i])))
+    codes <- unlist(lapply(kcd_cols, function(col) split_kcd(dt[[col]][i])))
     codes <- head(c(codes, rep(NA_character_, n_codes)), n_codes)
     for (j in seq_along(kcd_cols)) set(dt, i = i, j = kcd_cols[j], value = codes[j])
   }

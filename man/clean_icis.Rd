@@ -48,5 +48,5 @@ stays \code{NA}. A large \code{hos_day} can push the derived endpoint past the i
 date (still hospitalized); that is left visible and handled at aggregation.
 }
 \seealso{
-\code{\link[=filter_latest_inquiry]{filter_latest_inquiry()}}, \code{\link[=melt_disease_code]{melt_disease_code()}}.
+\code{\link[=filter_latest_inquiry]{filter_latest_inquiry()}}, \code{\link[=melt_kcd]{melt_kcd()}}.
 }

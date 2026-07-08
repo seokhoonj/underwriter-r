@@ -7,7 +7,7 @@
 map_disease(long, disease_table)
 }
 \arguments{
-\item{long}{A long table from \code{\link[=melt_disease_code]{melt_disease_code()}}.}
+\item{long}{A long table from \code{\link[=melt_kcd]{melt_kcd()}}.}
 
 \item{disease_table}{A lookup table with columns \code{kcd}, \code{kcd_main}, \code{sub_chk},
 \code{lookback_mon}.}
