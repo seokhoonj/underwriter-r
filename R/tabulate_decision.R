@@ -9,25 +9,30 @@
 #' of exclusion combinations follows.
 #'
 #' @param final A wide final-decision table from [combine_decision()].
+#' @param decision_table Decision-code table with a `role` column, used to find
+#'   the manual-review code (`role == "manual_review"`) for the `auto` flag.
 #' @param id_col Name of the id column to exclude from the coverages
 #'   (default `"id"`).
-#' @return A long `data.table` with columns `coverage`, `decision`,
-#'   `decision_category` (the decision's distinct class letters, e.g.
-#'   `"R03(34),R04(34)"` -> `"R"`, `"R(99),L(24),E(25)"` -> `"E,L,R"`), `n`
-#'   (insured count), and `ratio` (`n` over the coverage's total, so each
-#'   coverage's ratios sum to 1).
+#' @return A long `data.table` with columns `coverage`, `decision`, `category`
+#'   (the decision's distinct class letters, e.g. `"R03(34),R04(34)"` -> `"R"`,
+#'   `"R(99),L(24),E(25)"` -> `"E,L,R"`), `auto` (`0` when the decision is manual
+#'   review, `1` for every auto-decided outcome), `n` (insured count), and
+#'   `ratio` (`n` over the coverage's total, so each coverage's ratios sum to 1).
 #' @seealso [combine_decision()].
 #' @export
-tabulate_decision <- function(final, id_col = "id") {
+tabulate_decision <- function(final, decision_table, id_col = "id") {
   final <- as.data.table(final)
+  role <- decision_table$role
+  manual_review <- decision_table$code[!is.na(role) & role == "manual_review"][1L]
   coverages <- setdiff(names(final), id_col)
   long <- melt(final, id.vars = id_col, measure.vars = coverages,
                variable.name = "coverage", value.name = "decision",
                variable.factor = FALSE)
   out <- long[, .(n = .N), by = .(coverage, decision)]
-  out[, decision_category := .decision_category(decision)]
+  out[, category := .decision_category(decision)]
+  out[, auto := as.integer(category != manual_review)]
   out[, ratio := n / sum(n), by = coverage]
-  setcolorder(out, c("coverage", "decision", "decision_category", "n", "ratio"))
+  setcolorder(out, c("coverage", "decision", "category", "auto", "n", "ratio"))
   setorder(out, coverage, -n)
   out[]
 }

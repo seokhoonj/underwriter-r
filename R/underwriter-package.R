@@ -24,5 +24,5 @@ utils::globalVariables(c(
   "code", "coverage", "method", "priority", "rank", "dec", "token",
   "area", "mark", "months", "index", "total", "lower", "decision",
   # decision tabulation
-  "n", "ratio", "decision_category"
+  "n", "ratio", "category", "auto"
 ))
