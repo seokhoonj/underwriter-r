@@ -48,10 +48,11 @@ plot_decision <- function(final, group = c("auto", "category"),
     ggplot2::labs(title = title, y = "percent", fill = group) +
     ggplot2::theme_minimal() +
     ggplot2::theme(
-      axis.text.x      = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5),
-      axis.ticks.x     = ggplot2::element_line(),    # keep x-axis (coverage) ticks
-      axis.ticks.y     = ggplot2::element_blank(),   # drop y-axis ticks
-      panel.grid.minor = ggplot2::element_blank())
+      axis.text.x        = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5),
+      axis.ticks.x       = ggplot2::element_line(),    # keep x-axis (coverage) ticks
+      panel.grid.minor   = ggplot2::element_blank(),
+      panel.grid.major.x = ggplot2::element_blank())   # else the vertical gridlines peek
+                                                       # above the bars and read as top ticks
 
   # auto-decided (1) blue, manual review (0) red
   if (group == "auto")
