@@ -49,11 +49,12 @@ plot_decision <- function(final, group = c("auto", "category"),
     ggplot2::theme_minimal() +
     ggplot2::theme(
       axis.text.x      = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5),
-      axis.ticks       = ggplot2::element_blank(),
+      axis.ticks.x     = ggplot2::element_line(),    # keep x-axis (coverage) ticks
+      axis.ticks.y     = ggplot2::element_blank(),   # drop y-axis ticks
       panel.grid.minor = ggplot2::element_blank())
 
   # auto-decided (1) blue, manual review (0) red
   if (group == "auto")
-    p <- p + ggplot2::scale_fill_manual(values = c("0" = "firebrick", "1" = "steelblue"))
+    p <- p + ggplot2::scale_fill_manual(values = c("0" = "#FB8072", "1" = "#80B1D3"))
   p
 }
