@@ -9,7 +9,7 @@
 #'   (default `kcd0..kcd4`).
 #' @return A long `data.table` with columns `kcd`, `sub_kcd`, and the carried
 #'   claim columns.
-#' @seealso [map_disease_info()].
+#' @seealso [map_disease()].
 #' @export
 melt_disease_code <- function(clean, kcd_cols = paste0("kcd", 0:4)) {
   clean <- as.data.table(clean)
@@ -23,7 +23,7 @@ melt_disease_code <- function(clean, kcd_cols = paste0("kcd", 0:4)) {
 
 #' Map diagnosis codes to their representative disease and scope flags
 #'
-#' Joins each `kcd` to `disease_info` to attach the representative disease
+#' Joins each `kcd` to `disease_table` to attach the representative disease
 #' (`kcd_main`), the sub-diagnosis review flag (`sub_chk`), and the lookback
 #' window in months (`lookback_mon`): exact match first, then a 3-character
 #' fallback, then `"ZZZ"` for the still-unmapped (kept, never dropped, so they
@@ -45,7 +45,7 @@ melt_disease_code <- function(clean, kcd_cols = paste0("kcd", 0:4)) {
 #' @return `long` with `kcd_main`, `sub_chk`, `lookback_mon`, `review`,
 #'   `in_lookback`, `in_5yr` added.
 #' @export
-map_disease_info <- function(long, disease_table) {
+map_disease <- function(long, disease_table) {
   long <- as.data.table(copy(long))
   disease_table <- as.data.table(disease_table)
   long[disease_table, on = .(kcd),

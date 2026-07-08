@@ -13,12 +13,18 @@
 #' expected to follow the kdb schema: keys, band bounds, and declaration
 #' attributes (the non-decision columns), plus one decision column per product.
 #'
-#' @param agg Per-`(id, kcd_main)` inputs from [aggregate_disease_info()],
+#' @param agg Per-`(id, kcd_main)` inputs from [aggregate_disease()],
 #'   carrying `age`.
 #' @param rule A rule-set `data.table`.
 #' @return A list with `applied` (the input plus `matched`, `conflict`, and one
 #'   decision column per product; the decision-column names are stored on the
-#'   `"decision_cols"` attribute), `decision_cols`, `n_norule`, `n_conflict`.
+#'   `"decision_cols"` attribute), `decision_cols`, `unmatched` (the input rows
+#'   no rule matched), `multi_matched` (each multi-matched input joined to the
+#'   overlapping rules it hit, for rule-set cleanup), `conflict` (the subset of
+#'   `multi_matched` whose matched rules disagree on a decision), and three
+#'   diagnostic counts: `n_unmatched` (inputs no rule matched), `n_multi_matched`
+#'   (inputs matched by more than one rule), and `n_conflict` (inputs whose
+#'   matched rules disagree, so `n_conflict <= n_multi_matched`).
 #' @seealso [combine_decision()].
 #' @export
 match_rule <- function(agg, rule) {
@@ -47,18 +53,34 @@ match_rule <- function(agg, rule) {
   first_match <- unique(joined, by = "rid")
   first_match <- first_match[, c("rid", "matched", "no", "ord", decision_cols), with = FALSE]
 
-  # flag the few inputs whose matches disagree on any decision
-  n_distinct   <- joined[matched == 1L, uniqueN(.SD), by = rid, .SDcols = decision_cols]
-  conflict_ids <- n_distinct[V1 > 1L, rid]
+  # inputs matched by more than one rule; near-all are identical duplicates, but
+  # some disagree on a decision -- those are the genuine conflicts.
+  matches_per_input <- joined[matched == 1L, .N, by = rid]
+  n_distinct        <- joined[matched == 1L, uniqueN(.SD), by = rid, .SDcols = decision_cols]
+  conflict_ids      <- n_distinct[V1 > 1L, rid]
+  multi_matched_ids <- matches_per_input[N > 1L, rid]
 
   applied <- merge(input, first_match, by = "rid", all.x = TRUE)
   applied[, conflict := rid %in% conflict_ids]
   setattr(applied, "decision_cols", decision_cols)   # combine_decision reads it from the attribute
+
+  # each multi-matched input joined to the overlapping rules it hit, so an
+  # over-broad or duplicated rule set can be found and cleaned.
+  multi_matched <- merge(input[rid %in% multi_matched_ids],
+                         joined[rid %in% multi_matched_ids, c("rid", "no", "ord", decision_cols), with = FALSE],
+                         by = "rid", allow.cartesian = TRUE)
+  setorder(multi_matched, rid, ord)
+  conflict <- multi_matched[rid %in% conflict_ids]   # the multi-matched rules that disagree on a decision
+
   list(
-    applied       = applied,
-    decision_cols = decision_cols,
-    n_norule      = applied[matched == 0L, .N],
-    n_conflict    = length(conflict_ids)
+    applied         = applied,
+    decision_cols   = decision_cols,
+    unmatched       = applied[matched == 0L, .SD, .SDcols = names(agg)],
+    multi_matched   = multi_matched,
+    conflict        = conflict,
+    n_unmatched     = applied[matched == 0L, .N],
+    n_multi_matched = length(multi_matched_ids),
+    n_conflict      = length(conflict_ids)
   )
 }
 

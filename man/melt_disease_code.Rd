@@ -22,5 +22,5 @@ code, carrying every other column. \code{sub_kcd} is \code{0} for the main diagn
 (\code{kcd0}) and \code{1} for sub-diagnoses.
 }
 \seealso{
-\code{\link[=map_disease_info]{map_disease_info()}}.
+\code{\link[=map_disease]{map_disease()}}.
 }

@@ -7,7 +7,7 @@
 match_rule(agg, rule)
 }
 \arguments{
-\item{agg}{Per-\verb{(id, kcd_main)} inputs from \code{\link[=aggregate_disease_info]{aggregate_disease_info()}},
+\item{agg}{Per-\verb{(id, kcd_main)} inputs from \code{\link[=aggregate_disease]{aggregate_disease()}},
 carrying \code{age}.}
 
 \item{rule}{A rule-set \code{data.table}.}
@@ -15,7 +15,13 @@ carrying \code{age}.}
 \value{
 A list with \code{applied} (the input plus \code{matched}, \code{conflict}, and one
 decision column per product; the decision-column names are stored on the
-\code{"decision_cols"} attribute), \code{decision_cols}, \code{n_norule}, \code{n_conflict}.
+\code{"decision_cols"} attribute), \code{decision_cols}, \code{unmatched} (the input rows
+no rule matched), \code{multi_matched} (each multi-matched input joined to the
+overlapping rules it hit, for rule-set cleanup), \code{conflict} (the subset of
+\code{multi_matched} whose matched rules disagree on a decision), and three
+diagnostic counts: \code{n_unmatched} (inputs no rule matched), \code{n_multi_matched}
+(inputs matched by more than one rule), and \code{n_conflict} (inputs whose
+matched rules disagree, so \code{n_conflict <= n_multi_matched}).
 }
 \description{
 For each \verb{(id, kcd_main)} input, finds the rule row whose bands it falls in
