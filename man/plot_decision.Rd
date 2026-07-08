@@ -7,7 +7,7 @@
 plot_decision(
   final,
   group = c("auto", "category"),
-  order = c("column", "auto_high", "auto_low"),
+  order = c("auto_high", "auto_low", "column"),
   min_label = 0.03,
   title = "Decision composition per coverage"
 )
@@ -18,10 +18,10 @@ plot_decision(
 \item{group}{Column to stack and colour by: \code{"auto"} (default) or
 \code{"category"}.}
 
-\item{order}{Coverage order along the x-axis: \code{"column"} (default, the
+\item{order}{Coverage order along the x-axis: \code{"auto_high"} (default, highest
+auto-decided share first), \code{"auto_low"} (lowest first), or \code{"column"} (the
 coverage column order defined in the rule set, from \code{final}'s
-\code{decision_cols} attribute), \code{"auto_high"} (highest auto-decided share
-first), or \code{"auto_low"} (lowest first).}
+\code{decision_cols} attribute).}
 
 \item{min_label}{Segments whose share is at or below this are left unlabelled,
 to keep thin slivers from cluttering (default \code{0.03}).}

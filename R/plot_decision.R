@@ -7,10 +7,10 @@
 #' @param final A wide final-decision table from [combine_decision()].
 #' @param group Column to stack and colour by: `"auto"` (default) or
 #'   `"category"`.
-#' @param order Coverage order along the x-axis: `"column"` (default, the
+#' @param order Coverage order along the x-axis: `"auto_high"` (default, highest
+#'   auto-decided share first), `"auto_low"` (lowest first), or `"column"` (the
 #'   coverage column order defined in the rule set, from `final`'s
-#'   `decision_cols` attribute), `"auto_high"` (highest auto-decided share
-#'   first), or `"auto_low"` (lowest first).
+#'   `decision_cols` attribute).
 #' @param min_label Segments whose share is at or below this are left unlabelled,
 #'   to keep thin slivers from cluttering (default `0.03`).
 #' @param title Plot title (default `"Decision composition per coverage"`).
@@ -19,7 +19,7 @@
 #' @seealso [tabulate_decision()].
 #' @export
 plot_decision <- function(final, group = c("auto", "category"),
-                          order = c("column", "auto_high", "auto_low"), min_label = 0.03,
+                          order = c("auto_high", "auto_low", "column"), min_label = 0.03,
                           title = "Decision composition per coverage") {
   group <- match.arg(group)
   order <- match.arg(order)
