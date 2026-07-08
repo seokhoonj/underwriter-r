@@ -7,9 +7,10 @@
 #' @param final A wide final-decision table from [combine_decision()].
 #' @param group Column to stack and colour by: `"auto"` (default) or
 #'   `"category"`.
-#' @param order Coverage order along the x-axis: `"ruleset"` (default, the
-#'   coverage order defined in the rule set, from `final`'s `decision_cols`
-#'   attribute) or `"auto_rate"` (highest auto-decided share first).
+#' @param order Coverage order along the x-axis: `"column"` (default, the
+#'   coverage column order defined in the rule set, from `final`'s
+#'   `decision_cols` attribute), `"auto_high"` (highest auto-decided share
+#'   first), or `"auto_low"` (lowest first).
 #' @param min_label Segments whose share is at or below this are left unlabelled,
 #'   to keep thin slivers from cluttering (default `0.03`).
 #' @param title Plot title (default `"decision composition per coverage"`).
@@ -18,19 +19,20 @@
 #' @seealso [tabulate_decision()].
 #' @export
 plot_decision <- function(final, group = c("auto", "category"),
-                          order = c("ruleset", "auto_rate"), min_label = 0.03,
+                          order = c("column", "auto_high", "auto_low"), min_label = 0.03,
                           title = "decision composition per coverage") {
   group <- match.arg(group)
   order <- match.arg(order)
   tab   <- tabulate_decision(final)
 
-  coverage_levels <- if (order == "auto_rate") {
-    auto_rate <- tab[, .(rate = sum(ratio[auto == "1"])), by = coverage]
-    setorder(auto_rate, -rate)$coverage
-  } else {
+  coverage_levels <- if (order == "column") {
     cols <- attr(final, "decision_cols")
     covs <- unique(tab$coverage)
     if (is.null(cols)) sort(covs) else c(intersect(cols, covs), setdiff(covs, cols))
+  } else {
+    auto_rate <- tab[, .(rate = sum(ratio[auto == "1"])), by = coverage]
+    setorder(auto_rate, rate)
+    if (order == "auto_high") rev(auto_rate$coverage) else auto_rate$coverage
   }
 
   d <- tab[, .(ratio = sum(ratio)), by = c("coverage", group)]
