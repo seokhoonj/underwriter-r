@@ -35,8 +35,11 @@ attribute set by \code{\link[=match_rule]{match_rule()}}).}
 \value{
 A wide \code{data.table}, one row per \code{id}, one column per coverage. The
 four supplied tables ride along as attributes (\code{decision_table},
-\code{exclusion_table}, \code{reduction_table}, \code{loading_table}), so downstream
-summaries such as \code{\link[=tabulate_decision]{tabulate_decision()}} can recover them without re-passing.
+\code{exclusion_table}, \code{reduction_table}, \code{loading_table}), together with
+\code{decision_cols} (the rule-set coverage order, which the \code{id ~ coverage}
+reshape would otherwise sort away), so downstream summaries such as
+\code{\link[=tabulate_decision]{tabulate_decision()}} and \code{\link[=plot_decision]{plot_decision()}} can recover them without
+re-passing.
 }
 \description{
 Collapses the per-disease decisions from \code{\link[=match_rule]{match_rule()}} to one decision per

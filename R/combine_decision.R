@@ -22,8 +22,11 @@
 #' @param max_sites Maximum distinct exclusion sites before a coverage declines.
 #' @return A wide `data.table`, one row per `id`, one column per coverage. The
 #'   four supplied tables ride along as attributes (`decision_table`,
-#'   `exclusion_table`, `reduction_table`, `loading_table`), so downstream
-#'   summaries such as [tabulate_decision()] can recover them without re-passing.
+#'   `exclusion_table`, `reduction_table`, `loading_table`), together with
+#'   `decision_cols` (the rule-set coverage order, which the `id ~ coverage`
+#'   reshape would otherwise sort away), so downstream summaries such as
+#'   [tabulate_decision()] and [plot_decision()] can recover them without
+#'   re-passing.
 #' @export
 combine_decision <- function(applied, decision_table, exclusion_table, reduction_table, loading_table,
                              decision_cols = attr(applied, "decision_cols"), max_sites = 4L) {
@@ -45,6 +48,7 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   setattr(final, "exclusion_table", exclusion_table)
   setattr(final, "reduction_table", reduction_table)
   setattr(final, "loading_table",   loading_table)
+  setattr(final, "decision_cols",   decision_cols)   # rule-set coverage order, for plot_decision
   final[]
 }
 

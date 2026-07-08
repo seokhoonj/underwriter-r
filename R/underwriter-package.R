@@ -3,6 +3,7 @@
 
 #' @import data.table
 #' @importFrom stats setNames
+#' @importFrom rlang .data
 NULL
 
 # data.table's non-standard evaluation references column names as bare symbols,
@@ -26,5 +27,7 @@ utils::globalVariables(c(
   # decision tabulation
   "n", "ratio", "category", "auto",
   # decision tracing
-  "diseases", "computed", "stored", "ok"
+  "diseases", "computed", "stored", "ok",
+  # decision plotting
+  "rate"
 ))

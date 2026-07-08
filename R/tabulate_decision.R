@@ -32,6 +32,7 @@ tabulate_decision <- function(final, id_col = "id") {
   long <- melt(final, id.vars = id_col, measure.vars = coverages,
                variable.name = "coverage", value.name = "decision",
                variable.factor = FALSE)
+  long <- long[!is.na(decision) & nzchar(decision)]   # skip coverages an id was never evaluated on
   out <- long[, .(n = .N), by = .(coverage, decision)]
   out[, category := .decision_category(decision)]
   # per-code auto flag from decision_table; a decision counts as auto only when
