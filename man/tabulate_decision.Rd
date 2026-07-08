@@ -4,13 +4,13 @@
 \alias{tabulate_decision}
 \title{Tabulate the decision distribution per coverage}
 \usage{
-tabulate_decision(final, decision_table, id_col = "id")
+tabulate_decision(final, id_col = "id")
 }
 \arguments{
-\item{final}{A wide final-decision table from \code{\link[=combine_decision]{combine_decision()}}.}
-
-\item{decision_table}{Decision-code table with a \code{role} column, used to find
-the manual-review code (\code{role == "manual_review"}) for the \code{auto} flag.}
+\item{final}{A wide final-decision table from \code{\link[=combine_decision]{combine_decision()}}. Its
+\code{decision_table} attribute (attached by \code{\link[=combine_decision]{combine_decision()}}) supplies the
+manual-review code for the \code{auto} column; when that attribute is absent,
+\code{auto} is omitted.}
 
 \item{id_col}{Name of the id column to exclude from the coverages
 (default \code{"id"}).}
@@ -18,9 +18,11 @@ the manual-review code (\code{role == "manual_review"}) for the \code{auto} flag
 \value{
 A long \code{data.table} with columns \code{coverage}, \code{decision}, \code{category}
 (the decision's distinct class letters, e.g. \code{"R03(34),R04(34)"} -> \code{"R"},
-\code{"R(99),L(24),E(25)"} -> \code{"E,L,R"}), \code{auto} (\code{0} when the decision is manual
-review, \code{1} for every auto-decided outcome), \code{n} (insured count), and
-\code{ratio} (\code{n} over the coverage's total, so each coverage's ratios sum to 1).
+\code{"R(99),L(24),E(25)"} -> \code{"E,L,R"}), \code{n} (insured count), and \code{ratio} (\code{n}
+over the coverage's total, so each coverage's ratios sum to 1). When \code{final}
+carries a \code{decision_table} attribute, an \code{auto} column is inserted after
+\code{category} (\code{0} when the decision is manual review, \code{1} for every
+auto-decided outcome).
 }
 \description{
 Summarizes a per-insured final decision table (one row per id, one column per

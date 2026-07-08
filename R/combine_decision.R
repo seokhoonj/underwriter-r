@@ -11,7 +11,7 @@
 #'
 #' @param applied The per-disease decisions from [match_rule()] (`$applied`).
 #' @param decision_table Decision-code table with columns `code`, `priority`
-#'   (lower = worse), `combine` (`priority`/`exclusion`/`loading`/`reduction`),
+#'   (lower = worse), `combiner` (`priority`/`exclusion`/`loading`/`reduction`),
 #'   and `role` (marks the engine-emitted codes: `standard`, `decline`,
 #'   `manual_review`).
 #' @param exclusion_table,reduction_table Period-code tables with columns `mark`,
@@ -20,12 +20,15 @@
 #' @param decision_cols Coverage decision columns (default: the `"decision_cols"`
 #'   attribute set by [match_rule()]).
 #' @param max_sites Maximum distinct exclusion sites before a coverage declines.
-#' @return A wide `data.table`, one row per `id`, one column per coverage.
+#' @return A wide `data.table`, one row per `id`, one column per coverage. The
+#'   four supplied tables ride along as attributes (`decision_table`,
+#'   `exclusion_table`, `reduction_table`, `loading_table`), so downstream
+#'   summaries such as [tabulate_decision()] can recover them without re-passing.
 #' @export
 combine_decision <- function(applied, decision_table, exclusion_table, reduction_table, loading_table,
                              decision_cols = attr(applied, "decision_cols"), max_sites = 4L) {
   priority <- setNames(as.integer(decision_table$priority), decision_table$code)
-  combiner <- setNames(decision_table$combine, decision_table$code)
+  combiner <- setNames(decision_table$combiner, decision_table$code)
   letter   <- .decision_letters(decision_table, priority)
 
   long <- .melt_decisions(applied, decision_cols, combiner, letter$manual_review)
@@ -37,14 +40,19 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
     .combine_reduction(long[method == "reduction"], reduction_table, letter$reduction)
   ), use.names = TRUE)
 
-  .pick_worst(results, priority, unique(long[, .(id, coverage)]), letter$standard)
+  final <- .pick_worst(results, priority, unique(long[, .(id, coverage)]), letter$standard)
+  setattr(final, "decision_table",  decision_table)
+  setattr(final, "exclusion_table", exclusion_table)
+  setattr(final, "reduction_table", reduction_table)
+  setattr(final, "loading_table",   loading_table)
+  final[]
 }
 
 # Resolve the company's code letters from the table: class letters from the
 # `combine` column, engine-emitted codes from the `role` column (falling back to
 # best/worst priority for standard/decline when no role column is supplied).
 .decision_letters <- function(decision_table, priority) {
-  by_combine <- function(m) decision_table$code[decision_table$combine == m][1L]
+  by_combine <- function(m) decision_table$code[decision_table$combiner == m][1L]
   by_role    <- function(r) if ("role" %in% names(decision_table))
     decision_table$code[!is.na(decision_table$role) & decision_table$role == r][1L] else NA_character_
   standard <- by_role("standard"); if (is.na(standard)) standard <- names(which.max(priority))

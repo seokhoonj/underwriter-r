@@ -18,7 +18,7 @@ combine_decision(
 \item{applied}{The per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
 
 \item{decision_table}{Decision-code table with columns \code{code}, \code{priority}
-(lower = worse), \code{combine} (\code{priority}/\code{exclusion}/\code{loading}/\code{reduction}),
+(lower = worse), \code{combiner} (\code{priority}/\code{exclusion}/\code{loading}/\code{reduction}),
 and \code{role} (marks the engine-emitted codes: \code{standard}, \code{decline},
 \code{manual_review}).}
 
@@ -33,7 +33,10 @@ attribute set by \code{\link[=match_rule]{match_rule()}}).}
 \item{max_sites}{Maximum distinct exclusion sites before a coverage declines.}
 }
 \value{
-A wide \code{data.table}, one row per \code{id}, one column per coverage.
+A wide \code{data.table}, one row per \code{id}, one column per coverage. The
+four supplied tables ride along as attributes (\code{decision_table},
+\code{exclusion_table}, \code{reduction_table}, \code{loading_table}), so downstream
+summaries such as \code{\link[=tabulate_decision]{tabulate_decision()}} can recover them without re-passing.
 }
 \description{
 Collapses the per-disease decisions from \code{\link[=match_rule]{match_rule()}} to one decision per
