@@ -20,6 +20,10 @@
 #' @param loading_table Columns `lower`, `decision`.
 #' @param decision_cols Coverage decision columns (default: the `"decision_cols"`
 #'   attribute set by [match_rule()]).
+#' @param pass_ids Optional ids to record as an automatic pass -- standard on
+#'   every coverage -- even though they have no disease-based decision, e.g.
+#'   applicants whose claims carry no diagnosis code (no disease to restrict on).
+#'   They are appended to the result so downstream summaries count them as auto.
 #' @param max_sites Maximum distinct exclusion sites before a coverage declines.
 #' @return A wide `data.table`, one row per `id`, one column per coverage. The
 #'   four supplied tables ride along as attributes (`decision_table`,
@@ -30,7 +34,8 @@
 #'   re-passing.
 #' @export
 combine_decision <- function(applied, decision_table, exclusion_table, reduction_table, loading_table,
-                             decision_cols = attr(applied, "decision_cols"), max_sites = 4L) {
+                             decision_cols = attr(applied, "decision_cols"), max_sites = 4L,
+                             pass_ids = NULL) {
   priority <- setNames(as.integer(decision_table$priority), decision_table$code)
   combiner <- setNames(decision_table$combiner, decision_table$code)
   letter   <- .decision_letters(decision_table, priority)
@@ -45,6 +50,17 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   ), use.names = TRUE)
 
   final <- .pick_worst(results, priority, unique(long[, .(id, coverage)]), letter$standard)
+
+  # applicants with no disease-based decision (e.g. no diagnosis code): standard
+  # on every coverage, so they count as an automatic pass downstream.
+  missing <- setdiff(pass_ids, final$id)
+  if (length(missing)) {
+    cov_cols <- setdiff(names(final), "id")
+    passed <- data.table(id = missing)
+    passed[, (cov_cols) := letter$standard]
+    final <- rbind(final, passed, use.names = TRUE)
+  }
+
   setattr(final, "decision_table",  decision_table)
   setattr(final, "exclusion_table", exclusion_table)
   setattr(final, "reduction_table", reduction_table)

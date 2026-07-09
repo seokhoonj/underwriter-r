@@ -11,7 +11,8 @@ combine_decision(
   reduction_table,
   loading_table,
   decision_cols = attr(applied, "decision_cols"),
-  max_sites = 4L
+  max_sites = 4L,
+  pass_ids = NULL
 )
 }
 \arguments{
@@ -32,6 +33,11 @@ period); the period logic is parsed from the mark itself.}
 attribute set by \code{\link[=match_rule]{match_rule()}}).}
 
 \item{max_sites}{Maximum distinct exclusion sites before a coverage declines.}
+
+\item{pass_ids}{Optional ids to record as an automatic pass -- standard on
+every coverage -- even though they have no disease-based decision, e.g.
+applicants whose claims carry no diagnosis code (no disease to restrict on).
+They are appended to the result so downstream summaries count them as auto.}
 }
 \value{
 A wide \code{data.table}, one row per \code{id}, one column per coverage. The
