@@ -23,9 +23,10 @@
 #'     impossible date, by span direction.}
 #'   \item{`gender_dist`, `age_stat`, `missing_required`}{value profile.}
 #'   \item{`no_diagnosis`}{rows with every `kcd` empty (which `clean_icis()`
-#'     drops), split by whether treatment values (`hos_day`/`sur_cnt`/`hos_cnt`)
-#'     are present vs all zero, plus the count of insured with no coded row at
-#'     all.}
+#'     drops) -- each still a real claim -- split by treatment: inpatient/surgery
+#'     (`hos_day`/`sur_cnt`/`hos_cnt` > 0), outpatient (a visit date only), or
+#'     truly empty (no treatment and no date). Plus the count of insured with no
+#'     coded row at all.}
 #' }
 #'
 #' @param dt An ICIS claim table (`data.table` or coercible).
@@ -156,21 +157,24 @@ diagnose_icis <- function(dt, verbose = TRUE) {
                              function(v) sum(is.na(v) | (is.character(v) & !nzchar(trimws(v)))), numeric(1))
 
   # --- no-diagnosis rows (every kcd empty; clean_icis drops these) ----------
-  # split by whether the row still carries treatment (hospitalisation/surgery) --
-  # a coded-less row with treatment is a real claim missing its diagnosis, while
-  # an all-zero row is an empty record.
+  # every such row is still a real claim, split by the treatment it carries:
+  # inpatient/surgery (hos_day/sur_cnt/hos_cnt > 0), outpatient (no such value but
+  # a visit date), or truly empty (no treatment and no date). Only the last is
+  # safe to auto-pass; the first two are real claims missing a diagnosis.
   no_diagnosis <- NULL
   kcd_cols <- intersect(paste0("kcd", 0:4), names(dt))
   if (length(kcd_cols)) {
     no_code <- Reduce(`&`, lapply(kcd_cols, function(col) !.is_present(dt[[col]])))
     tx_cols <- intersect(c("hos_day", "sur_cnt", "hos_cnt"), names(dt))
-    has_tx  <- if (length(tx_cols))
+    has_tx    <- if (length(tx_cols))
       Reduce(`|`, lapply(tx_cols, function(col) !is.na(dt[[col]]) & dt[[col]] > 0)) else logical(n_row)
+    has_visit <- if (.has_col("acc_date")) .is_present(dt$acc_date) else logical(n_row)
     no_diagnosis <- list(
-      all_empty      = .count_mask(no_code),
-      with_treatment = .count_within(has_tx, no_code),
-      all_zero       = .count_within(!has_tx, no_code),
-      all_empty_ids  = n_id - uniqueN(id[!no_code])   # insured with no coded row at all
+      all_empty     = .count_mask(no_code),
+      inpatient     = .count_within(has_tx, no_code),
+      outpatient    = .count_within(!has_tx & has_visit, no_code),
+      empty         = .count_within(!has_tx & !has_visit, no_code),
+      all_empty_ids = n_id - uniqueN(id[!no_code])   # insured with no coded row at all
     )
   }
 
@@ -269,8 +273,9 @@ diagnose_icis <- function(dt, verbose = TRUE) {
     nd <- out$no_diagnosis
     .header("no diagnosis (all kcd empty; clean_icis drops these rows)")
     .counts("all kcd empty", nd$all_empty)
-    .counts("  with treatment (hos/sur)", nd$with_treatment)
-    .counts("  all zero", nd$all_zero)
+    .counts("  inpatient/surgery", nd$inpatient)
+    .counts("  outpatient (visit only)", nd$outpatient)
+    .counts("  empty (no treatment/date)", nd$empty)
     .icount("ids with no coded row", nd$all_empty_ids, "-> dropped entirely")
   }
 }
