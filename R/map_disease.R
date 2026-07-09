@@ -37,14 +37,22 @@ map_disease <- function(long, disease_table) {
   long[is.na(kcd_main), `:=`(kcd_main = "ZZZ", sub_chk = 1L)]   # lookback_mon stays NA for ZZZ
   long[, review := as.integer(sub_kcd == 0L | sub_chk == 1L)]
   long[, tdate := pmax(acc_date, sdate, edate, na.rm = TRUE)]   # most recent treatment date
-  long[, in_lookback := {
-    cutoff <- as.POSIXlt(inq_date); cutoff$mon <- cutoff$mon - lookback_mon
-    as.integer(tdate >= as.Date(cutoff))
-  }]
-  long[, in_5yr := {
-    cutoff <- as.POSIXlt(inq_date); cutoff$mon <- cutoff$mon - 60L
-    as.integer(tdate >= as.Date(cutoff))
-  }]
+  long[, in_lookback := as.integer(tdate >= .minus_months(inq_date, lookback_mon))]
+  long[, in_5yr      := as.integer(tdate >= .minus_months(inq_date, 60L))]
   long[, tdate := NULL]
   long[]
+}
+
+# `date` minus `n` months, clamped to the target month's last day so that, e.g.,
+# 03-31 minus 1 month is 02-29, not 03-02 (which raw POSIXlt month subtraction
+# gives when the day overflows a shorter month). `n` may be `NA` (-> `NA`).
+.minus_months <- function(date, n) {
+  lt <- as.POSIXlt(date)
+  day <- lt$mday
+  lt$mday <- 1L                          # first of month: month shift can't overflow
+  lt$mon  <- lt$mon - n
+  first <- as.Date(lt)
+  nxt <- as.POSIXlt(first); nxt$mon <- nxt$mon + 1L
+  days_in_month <- as.integer(as.Date(nxt) - first)
+  first + (pmin(day, days_in_month) - 1L)
 }

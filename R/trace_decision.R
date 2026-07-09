@@ -30,8 +30,13 @@ trace_decision <- function(applied, final, id) {
   one <- as.data.table(applied)[id == key]
   if (!nrow(one)) stop(sprintf("id %s not found in `applied`.", format(key)))
 
-  # per-disease decision tokens that fed each coverage
-  inputs <- melt(one, id.vars = "kcd_main", measure.vars = decision_cols,
+  # per-disease tokens that fed each coverage; mirror combine's fill so an
+  # unmatched disease shows as manual review rather than a blank cell
+  manual_review <- decision_table$code[!is.na(decision_table$role) &
+                                       decision_table$role == "manual_review"][1L]
+  filled <- copy(one)
+  filled[matched == 0L, (decision_cols) := manual_review]
+  inputs <- melt(filled, id.vars = "kcd_main", measure.vars = decision_cols,
                  variable.name = "coverage", value.name = "code", variable.factor = FALSE)
   inputs <- inputs[!is.na(code) & nzchar(code)]
   per_cov <- inputs[, .(diseases = paste(sprintf("%s:%s", kcd_main, code), collapse = " | ")),
@@ -45,8 +50,9 @@ trace_decision <- function(applied, final, id) {
   stored <- melt(as.data.table(final)[id == key], id.vars = "id", variable.name = "coverage",
                  value.name = "stored", variable.factor = FALSE)[, .(coverage, stored)]
 
-  out <- merge(per_cov, computed, by = "coverage", all.x = TRUE)
-  out <- merge(out, stored, by = "coverage", all.x = TRUE)
+  # base on the id's actual decisions so U-filled coverages are not dropped
+  out <- merge(computed, stored, by = "coverage")
+  out <- merge(out, per_cov, by = "coverage", all.x = TRUE)
   out[, ok := computed == stored]
   setcolorder(out, c("coverage", "diseases", "computed", "stored", "ok"))
   setorder(out, coverage)
