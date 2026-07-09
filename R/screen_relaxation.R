@@ -37,23 +37,23 @@ screen_relaxation <- function(applied, final, by_coverage = FALSE) {
   final_long <- melt(as.data.table(final), id.vars = "id", variable.name = "coverage",
                      value.name = "decision", variable.factor = FALSE)
   final_long <- final_long[!is.na(decision) & nzchar(decision)]
-  u_cells     <- final_long[decision == manual_review, .(id, coverage)]
-  total_cells <- nrow(final_long)
+  review_cells <- final_long[decision == manual_review, .(id, coverage)]
+  total_cells  <- nrow(final_long)
 
   # the diseases that route each coverage to manual review: matched cells holding
   # the manual-review code, plus unmatched diseases (review on every coverage)
   a <- as.data.table(applied)
-  matched_u <- melt(a[matched == 1L], id.vars = c("id", "kcd_main"),
-                    measure.vars = decision_cols, variable.name = "coverage",
-                    value.name = "code", variable.factor = FALSE)[
-                    code == manual_review, .(id, kcd_main, coverage)]
-  unmatched_u <- a[matched == 0L, .(id, kcd_main)][, .(coverage = decision_cols),
-                                                   by = .(id, kcd_main)]
-  u_src <- rbindlist(list(matched_u, unmatched_u))
-  u_src <- u_src[u_cells, on = .(id, coverage), nomatch = NULL]   # keep real review cells
+  matched_review <- melt(a[matched == 1L], id.vars = c("id", "kcd_main"),
+                         measure.vars = decision_cols, variable.name = "coverage",
+                         value.name = "code", variable.factor = FALSE)[
+                         code == manual_review, .(id, kcd_main, coverage)]
+  unmatched_review <- a[matched == 0L, .(id, kcd_main)][, .(coverage = decision_cols),
+                                                        by = .(id, kcd_main)]
+  review_src <- rbindlist(list(matched_review, unmatched_review))
+  review_src <- review_src[review_cells, on = .(id, coverage), nomatch = NULL]   # keep real review cells
 
-  u_src[, n_src := uniqueN(kcd_main), by = .(id, coverage)]
-  sole <- u_src[n_src == 1L]                                       # sole cause -> flips if relaxed
+  review_src[, n_causes := uniqueN(kcd_main), by = .(id, coverage)]
+  sole <- review_src[n_causes == 1L]                              # sole cause -> flips if relaxed
   if (by_coverage) {
     out <- sole[, .(n_id = uniqueN(id), n_flipped = .N), by = .(kcd_main, coverage)]
     out <- merge(out, final_long[, .(n_cov = .N), by = coverage], by = "coverage")

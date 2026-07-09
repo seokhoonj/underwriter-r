@@ -20,6 +20,8 @@
 #' @export
 plot_screen_relaxation <- function(ranking, top = 12L, fill = "#4E79A7", title = NULL) {
   ranking <- as.data.table(ranking)
+  if (!nrow(ranking))
+    stop("`ranking` has no rows to plot (the coverage slice has no relaxable diseases).")
   cov <- if ("coverage" %in% names(ranking)) {
     covs <- unique(ranking$coverage)
     if (length(covs) > 1L)
@@ -30,7 +32,7 @@ plot_screen_relaxation <- function(ranking, top = 12L, fill = "#4E79A7", title =
   d <- head(ranking, top)
   if (is.null(title))
     title <- if (is.null(cov)) "Diseases to relax for the biggest automation-rate gain"
-             else sprintf("%s loopback: diseases that lift the %s coverage", cov, cov)
+             else sprintf("Diseases that lift the %s coverage", cov)
   ylab <- if (is.null(cov)) "overall automation-rate lift (%p)"
           else sprintf("%s automation-rate lift (%%p)", cov)
 

@@ -37,7 +37,11 @@ tabulate_decision <- function(final, id_col = "id") {
   out[, category := .decision_category(decision)]
   # per-code auto flag from decision_table; a decision counts as auto only when
   # every code in it is auto (0 if any component needs manual review).
-  auto_by_code <- setNames(as.integer(as.character(decision_table$auto)), decision_table$code)
+  # coerce the auto flag to 0/1 whatever its storage: factor "0"/"1" via character,
+  # logical TRUE/FALSE via as.integer directly, numeric/integer/character as-is.
+  auto_raw <- decision_table$auto
+  if (is.factor(auto_raw)) auto_raw <- as.character(auto_raw)
+  auto_by_code <- setNames(as.integer(auto_raw), decision_table$code)
   out[, auto := factor(
     vapply(strsplit(category, ",", fixed = TRUE),
            function(codes) min(auto_by_code[codes]), integer(1)),

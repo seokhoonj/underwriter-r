@@ -59,10 +59,9 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   # on every coverage, so they count as an automatic pass downstream.
   missing <- setdiff(pass_ids, final$id)
   if (length(missing)) {
-    cov_cols <- setdiff(names(final), "id")
     passed <- data.table(id = missing)
-    passed[, (cov_cols) := letter$standard]
-    final <- rbind(final, passed, use.names = TRUE)
+    passed[, (decision_cols) := letter$standard]   # decision_cols, not names(final): an
+    final <- rbind(final, passed, use.names = TRUE, fill = TRUE)   # all-pass run dcasts to id-only
   }
 
   setattr(final, "decision_table",  decision_table)

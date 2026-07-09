@@ -36,6 +36,7 @@
 #' @export
 diagnose_icis <- function(dt, verbose = TRUE) {
   dt <- as.data.table(dt)
+  if (!nrow(dt)) stop("`dt` has no rows to diagnose.")
   n_row <- nrow(dt); n_id <- uniqueN(dt$id)
   id <- dt$id
   .has_col <- function(col) col %in% names(dt)
