@@ -27,6 +27,12 @@
 #' @return A `data.table`, one row per coverage sorted by `lift` descending, with
 #'   `auto_base` (baseline auto share), `auto_relaxed` (after relaxing), `lift`
 #'   (the increase), and `n_flipped` (insured moved from manual review to auto).
+#' @note `mode = "full"` can *lower* the auto share on some coverages (negative
+#'   `lift`), which is easy to miss. Relaxing a disease that was auto-declining an
+#'   insured waives that decline; if another disease held the same coverage for
+#'   manual review that the decline had outranked, the insured now routes to
+#'   review instead of auto-decline. `mode = "review_only"` keeps declines and so
+#'   only ever raises the auto share.
 #' @seealso [tabulate_decision()], [combine_decision()].
 #' @export
 relax_disease <- function(applied, final, kcd_main, mode = c("review_only", "full")) {

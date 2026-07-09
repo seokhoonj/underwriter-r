@@ -42,6 +42,14 @@ Because a coverage routes to manual review when \emph{any} of an insured's disea
 does, the lift is computed by re-running the full combine -- an insured still
 held for review by another disease does not flip.
 }
+\note{
+\code{mode = "full"} can \emph{lower} the auto share on some coverages (negative
+\code{lift}), which is easy to miss. Relaxing a disease that was auto-declining an
+insured waives that decline; if another disease held the same coverage for
+manual review that the decline had outranked, the insured now routes to
+review instead of auto-decline. \code{mode = "review_only"} keeps declines and so
+only ever raises the auto share.
+}
 \seealso{
 \code{\link[=tabulate_decision]{tabulate_decision()}}, \code{\link[=combine_decision]{combine_decision()}}.
 }
