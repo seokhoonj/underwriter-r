@@ -35,7 +35,7 @@ matching rule is kept with \code{matched == 0} so it can route to manual review.
 \details{
 Near-all multi-matches are identical duplicates; the lowest-\code{ord} match is
 kept and the few genuine conflicts are flagged in \code{conflict}. The rule set is
-expected to follow the kdb schema: keys, band bounds, and declaration
+expected to follow a fixed schema: keys, band bounds, and declaration
 attributes (the non-decision columns), plus one decision column per product.
 }
 \seealso{

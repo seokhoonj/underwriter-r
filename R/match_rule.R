@@ -10,7 +10,7 @@
 #'
 #' Near-all multi-matches are identical duplicates; the lowest-`ord` match is
 #' kept and the few genuine conflicts are flagged in `conflict`. The rule set is
-#' expected to follow the kdb schema: keys, band bounds, and declaration
+#' expected to follow a fixed schema: keys, band bounds, and declaration
 #' attributes (the non-decision columns), plus one decision column per product.
 #'
 #' @param agg Per-`(id, kcd_main)` inputs from [aggregate_disease()],
