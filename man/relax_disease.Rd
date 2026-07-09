@@ -4,7 +4,13 @@
 \alias{relax_disease}
 \title{Estimate the auto-rate lift from relaxing a disease}
 \usage{
-relax_disease(applied, final, kcd_main, mode = c("review_only", "full"))
+relax_disease(
+  applied,
+  final,
+  kcd_main,
+  mode = c("review_only", "full"),
+  regex = FALSE
+)
 }
 \arguments{
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
@@ -13,7 +19,9 @@ relax_disease(applied, final, kcd_main, mode = c("review_only", "full"))
 carrying its config-table attributes.}
 
 \item{kcd_main}{The representative disease(s) to relax, e.g. \code{"M51"} or
-\code{c("M51", "S33")}.}
+\code{c("M51", "S33")}. With \code{regex = TRUE} each is a regular expression matched
+against \code{kcd_main} (combined with OR), so \code{c("M5[0-3]|K635", "N50")} relaxes
+every matching disease.}
 
 \item{mode}{How much to relax a matched target disease: \code{"review_only"}
 (default) turns only its manual-review decisions into standard, keeping any
@@ -23,6 +31,10 @@ everywhere, relax to standard either way. \code{"review_only"} can only raise th
 auto share and is the realistic lever. \code{"full"} can \emph{lower} it: waiving a
 decline that outranked another disease's manual review surfaces that review,
 moving the insured from auto-decline to review (a negative \code{lift}).}
+
+\item{regex}{If \code{TRUE}, treat \code{kcd_main} as regular expression pattern(s)
+(unanchored -- use \code{"^M51$"} for an exact code); default \code{FALSE} matches
+codes exactly.}
 }
 \value{
 A \code{data.table}, one row per coverage sorted by \code{lift} descending, with

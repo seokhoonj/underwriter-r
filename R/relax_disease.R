@@ -15,7 +15,12 @@
 #' @param final The baseline wide decision table from [combine_decision()],
 #'   carrying its config-table attributes.
 #' @param kcd_main The representative disease(s) to relax, e.g. `"M51"` or
-#'   `c("M51", "S33")`.
+#'   `c("M51", "S33")`. With `regex = TRUE` each is a regular expression matched
+#'   against `kcd_main` (combined with OR), so `c("M5[0-3]|K635", "N50")` relaxes
+#'   every matching disease.
+#' @param regex If `TRUE`, treat `kcd_main` as regular expression pattern(s)
+#'   (unanchored -- use `"^M51$"` for an exact code); default `FALSE` matches
+#'   codes exactly.
 #' @param mode How much to relax a matched target disease: `"review_only"`
 #'   (default) turns only its manual-review decisions into standard, keeping any
 #'   exclusions, loadings, reductions, and declines; `"full"` turns every decision
@@ -35,7 +40,8 @@
 #'   only ever raises the auto share.
 #' @seealso [tabulate_decision()], [combine_decision()].
 #' @export
-relax_disease <- function(applied, final, kcd_main, mode = c("review_only", "full")) {
+relax_disease <- function(applied, final, kcd_main, mode = c("review_only", "full"),
+                          regex = FALSE) {
   mode <- match.arg(mode)
   decision_table  <- attr(final, "decision_table")
   exclusion_table <- attr(final, "exclusion_table")
@@ -58,7 +64,8 @@ relax_disease <- function(applied, final, kcd_main, mode = c("review_only", "ful
   # disease decides only some coverages, so relax just those -- leaving the ones it
   # is silent on untouched, or an insured would be pulled into a new coverage.
   relaxed <- copy(as.data.table(applied))
-  tgt <- relaxed$kcd_main %in% target
+  tgt <- if (regex) grepl(paste(target, collapse = "|"), relaxed$kcd_main)
+         else relaxed$kcd_main %in% target
   relaxed[tgt & matched == 0L, (decision_cols) := standard]
   if (mode == "review_only") {
     for (col in decision_cols)   # only the manual-review cells, keep restrictions
