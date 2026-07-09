@@ -19,7 +19,6 @@ Imports:
   data.table (>= 1.14.2),
   ggplot2,
   instead,
-  rlang,
   stats
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3

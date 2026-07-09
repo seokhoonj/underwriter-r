@@ -3,7 +3,7 @@
 
 #' @import data.table
 #' @importFrom stats setNames
-#' @importFrom rlang .data
+#' @importFrom ggplot2 .data
 NULL
 
 # data.table's non-standard evaluation references column names as bare symbols,
