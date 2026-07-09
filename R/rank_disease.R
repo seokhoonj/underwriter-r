@@ -9,7 +9,8 @@
 #' manual-review source (another disease still holding it keeps it on review), so
 #' the lift is exact for relaxing one disease at a time without re-running
 #' [combine_decision()] per candidate. Cells already auto-decided -- including
-#' ones a decline outranks -- are not counted.
+#' ones a decline outranks -- are not counted. This matches [relax_disease()]'s
+#' `"review_only"` mode (declines are kept, so the auto share can only rise).
 #'
 #' @param applied Per-disease decisions from [match_rule()] (`$applied`).
 #' @param final The wide decision table from [combine_decision()], carrying its

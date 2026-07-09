@@ -18,11 +18,12 @@
 #'   `c("M51", "S33")`.
 #' @param mode How much to relax a matched target disease: `"review_only"`
 #'   (default) turns only its manual-review decisions into standard, keeping any
-#'   exclusions/loadings/reductions; `"full"` turns every decision it makes into
-#'   standard. Unmatched targets, which drive manual review everywhere, relax to
-#'   standard either way. The reported auto lift is identical for both modes --
-#'   exclusions and the like are already auto-decided, so only dropping manual
-#'   review raises the auto share -- but `"review_only"` is the realistic lever.
+#'   exclusions, loadings, reductions, and declines; `"full"` turns every decision
+#'   it makes into standard. Unmatched targets, which drive manual review
+#'   everywhere, relax to standard either way. `"review_only"` can only raise the
+#'   auto share and is the realistic lever. `"full"` can *lower* it: waiving a
+#'   decline that outranked another disease's manual review surfaces that review,
+#'   moving the insured from auto-decline to review (a negative `lift`).
 #' @return A `data.table`, one row per coverage sorted by `lift` descending, with
 #'   `auto_base` (baseline auto share), `auto_relaxed` (after relaxing), `lift`
 #'   (the increase), and `n_flipped` (insured moved from manual review to auto).

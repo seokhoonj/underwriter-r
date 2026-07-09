@@ -29,7 +29,8 @@ A manual-review cell flips only when the relaxed disease is its \emph{sole}
 manual-review source (another disease still holding it keeps it on review), so
 the lift is exact for relaxing one disease at a time without re-running
 \code{\link[=combine_decision]{combine_decision()}} per candidate. Cells already auto-decided -- including
-ones a decline outranks -- are not counted.
+ones a decline outranks -- are not counted. This matches \code{\link[=relax_disease]{relax_disease()}}'s
+\code{"review_only"} mode (declines are kept, so the auto share can only rise).
 }
 \seealso{
 \code{\link[=relax_disease]{relax_disease()}} for one disease's per-coverage detail.

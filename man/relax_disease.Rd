@@ -17,11 +17,12 @@ carrying its config-table attributes.}
 
 \item{mode}{How much to relax a matched target disease: \code{"review_only"}
 (default) turns only its manual-review decisions into standard, keeping any
-exclusions/loadings/reductions; \code{"full"} turns every decision it makes into
-standard. Unmatched targets, which drive manual review everywhere, relax to
-standard either way. The reported auto lift is identical for both modes --
-exclusions and the like are already auto-decided, so only dropping manual
-review raises the auto share -- but \code{"review_only"} is the realistic lever.}
+exclusions, loadings, reductions, and declines; \code{"full"} turns every decision
+it makes into standard. Unmatched targets, which drive manual review
+everywhere, relax to standard either way. \code{"review_only"} can only raise the
+auto share and is the realistic lever. \code{"full"} can \emph{lower} it: waiving a
+decline that outranked another disease's manual review surfaces that review,
+moving the insured from auto-decline to review (a negative \code{lift}).}
 }
 \value{
 A \code{data.table}, one row per coverage sorted by \code{lift} descending, with
