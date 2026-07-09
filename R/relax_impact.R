@@ -58,7 +58,7 @@ relax_impact <- function(applied, final, by_coverage = TRUE) {
     out <- sole[, .(n_id = uniqueN(id), n_flipped = .N), by = .(kcd_main, coverage)]
     out <- merge(out, final_long[, .(n_cov = .N), by = coverage], by = "coverage")
     out[, auto_lift := n_flipped / n_cov][, n_cov := NULL]
-    setcolorder(out, c("kcd_main", "coverage", "n_id", "n_flipped", "auto_lift"))
+    setcolorder(out, c("coverage", "kcd_main", "n_id", "n_flipped", "auto_lift"))
     setorder(out, coverage, -n_flipped)
   } else {
     out <- sole[, .(n_id = uniqueN(id), n_flipped = .N), by = kcd_main]
