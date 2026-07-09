@@ -13,6 +13,7 @@
 *.csv
 *.7z
 *.zip
+*.pdf
 
 dev/
 refs/
