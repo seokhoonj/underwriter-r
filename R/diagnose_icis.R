@@ -153,7 +153,7 @@ diagnose_icis <- function(dt, verbose = TRUE) {
   age_stat    <- if (.has_col("age")) list(min = min(dt$age, na.rm = TRUE), max = max(dt$age, na.rm = TRUE),
                                            n_zero = sum(dt$age == 0, na.rm = TRUE), n_na = sum(is.na(dt$age))) else NULL
   required <- intersect(c("id", "gender", "age", "inq_date", "acc_date", "pay_date", "kcd0"), names(dt))
-  missing_required <- vapply(dt[, ..required],
+  missing_required <- vapply(dt[, .SD, .SDcols = required],
                              function(v) sum(is.na(v) | (is.character(v) & !nzchar(trimws(v)))), numeric(1))
 
   # --- no-diagnosis rows (every kcd empty; clean_icis drops these) ----------

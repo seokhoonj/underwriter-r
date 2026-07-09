@@ -124,6 +124,7 @@ filter_latest_inquiry <- function(dt) {
   sdate_from_edate <- raw_edate - hos_day + 1L                      # edate basis: derived admission
 
   is_hosp   <- hos_day > 0
+  is_hosp[is.na(is_hosp)] <- FALSE          # NA hos_day: treat as no stay (outpatient)
   has_sdate <- !is.na(raw_sdate)
   has_edate <- !is.na(raw_edate)
   sdate_basis_ok <- has_sdate & (is.na(discharge_upper) | edate_from_sdate <= discharge_upper)
@@ -132,6 +133,7 @@ filter_latest_inquiry <- function(dt) {
   # anchor on edate when sdate is absent, or the sdate basis violates order and
   # the edate basis does not; otherwise anchor on sdate (preferred / fallback).
   use_edate_basis <- is_hosp & has_edate & (!has_sdate | (!sdate_basis_ok & edate_basis_ok))
+  use_edate_basis[is.na(use_edate_basis)] <- FALSE   # order-check NA -> keep the sdate basis
   use_sdate_basis <- is_hosp & has_sdate & !use_edate_basis
 
   final_sdate <- raw_sdate
