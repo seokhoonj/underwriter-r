@@ -1,14 +1,14 @@
 #' Plot the disease relaxation ranking
 #'
-#' Draws the ranking from [relax_impact()] as a horizontal bar chart: one bar per
+#' Draws the ranking from [screen_relaxation()] as a horizontal bar chart: one bar per
 #' representative disease, its length the automation-rate lift (percentage points)
 #' from relaxing that disease on its own, labelled with the lift and the insured
 #' count moved off manual review. Pass either the overall ranking
-#' (`relax_impact(applied, final)`) or a single coverage's ranking (one coverage
-#' sliced out of `relax_impact(..., by_coverage = TRUE)`); when a `coverage`
+#' (`screen_relaxation(applied, final)`) or a single coverage's ranking (one coverage
+#' sliced out of `screen_relaxation(..., by_coverage = TRUE)`); when a `coverage`
 #' column is present its name is woven into the axis label and title.
 #'
-#' @param impact A `data.table` from [relax_impact()]. If it carries a `coverage`
+#' @param impact A `data.table` from [screen_relaxation()]. If it carries a `coverage`
 #'   column it must hold a single coverage -- slice one first, e.g.
 #'   `impact[coverage == "adb"]`.
 #' @param top Number of top-ranked diseases to show (default `12`).
@@ -16,9 +16,9 @@
 #' @param title Plot title; by default a sentence naming the coverage for a
 #'   single-coverage slice, or the overall gain otherwise.
 #' @return A `ggplot` object.
-#' @seealso [relax_impact()], [plot_decision()].
+#' @seealso [screen_relaxation()], [plot_decision()].
 #' @export
-plot_relax_impact <- function(impact, top = 12L, fill = "#4E79A7", title = NULL) {
+plot_screen_relaxation <- function(impact, top = 12L, fill = "#4E79A7", title = NULL) {
   impact <- as.data.table(impact)
   cov <- if ("coverage" %in% names(impact)) {
     covs <- unique(impact$coverage)

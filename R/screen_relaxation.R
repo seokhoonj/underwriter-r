@@ -9,7 +9,7 @@
 #' manual-review source (another disease still holding it keeps it on review), so
 #' the lift is exact for relaxing one disease at a time without re-running
 #' [combine_decision()] per candidate. Cells already auto-decided -- including
-#' ones a decline outranks -- are not counted. This matches [relax_disease()]'s
+#' ones a decline outranks -- are not counted. This matches [simulate_relaxation()]'s
 #' `"review_only"` mode (declines are kept, so the auto share can only rise).
 #'
 #' @param applied Per-disease decisions from [match_rule()] (`$applied`).
@@ -23,9 +23,9 @@
 #'   `n_id` (insured moved off review), `n_flipped` (`insured x coverage` cells
 #'   flipped), and `auto_lift` (`n_flipped` over the decision cells); plus
 #'   `coverage` when `by_coverage = TRUE`.
-#' @seealso [relax_disease()] for one disease's per-coverage detail.
+#' @seealso [simulate_relaxation()] for one disease's per-coverage detail.
 #' @export
-relax_impact <- function(applied, final, by_coverage = FALSE) {
+screen_relaxation <- function(applied, final, by_coverage = FALSE) {
   decision_cols  <- attr(applied, "decision_cols")
   decision_table <- attr(final, "decision_table")
   if (is.null(decision_cols) || is.null(decision_table))

@@ -1,26 +1,26 @@
 #' Plot one disease's per-coverage relaxation effect
 #'
-#' Draws the per-coverage before/after from [relax_disease()] as a dumbbell chart:
+#' Draws the per-coverage before/after from [simulate_relaxation()] as a dumbbell chart:
 #' one row per coverage the disease actually moves, a grey point at the baseline
 #' automation rate and a coloured point at the relaxed rate, joined by a segment
 #' whose length is the lift. The lift (percentage points) is labelled at the
 #' relaxed end. Coverages the disease leaves unchanged are dropped.
 #'
-#' Complements [plot_relax_impact()]: that ranks every disease by its overall
+#' Complements [plot_screen_relaxation()]: that ranks every disease by its overall
 #' lift, this shows where a single chosen disease's lift lands across coverages.
 #'
-#' @param relaxed A `data.table` from [relax_disease()] (columns `coverage`,
+#' @param relaxed A `data.table` from [simulate_relaxation()] (columns `coverage`,
 #'   `auto_base`, `auto_relaxed`, `lift`, `n_flipped`).
 #' @param disease Optional disease label (the `kcd_main` passed to
-#'   [relax_disease()]) woven into the title.
+#'   [simulate_relaxation()]) woven into the title.
 #' @param top Optional cap on the number of coverages shown, taken by the largest
 #'   absolute lift; default `NULL` shows every coverage the disease moves.
 #' @param title Plot title; by default a sentence naming the disease when
 #'   `disease` is given, or a generic before/after line otherwise.
 #' @return A `ggplot` object. Baseline points are grey, relaxed points blue.
-#' @seealso [relax_disease()], [plot_relax_impact()].
+#' @seealso [simulate_relaxation()], [plot_screen_relaxation()].
 #' @export
-plot_relax_disease <- function(relaxed, disease = NULL, top = NULL, title = NULL) {
+plot_simulate_relaxation <- function(relaxed, disease = NULL, top = NULL, title = NULL) {
   d <- as.data.table(relaxed)[auto_relaxed != auto_base]   # only coverages it moves
   if (!is.null(top)) d <- utils::head(d[order(-abs(lift))], top)
   d[, coverage := factor(coverage, levels = d[order(auto_relaxed), coverage])]

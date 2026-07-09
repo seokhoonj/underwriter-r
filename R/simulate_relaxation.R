@@ -1,4 +1,4 @@
-#' Estimate the auto-rate lift from relaxing a disease
+#' Simulate relaxing a disease and measure the per-coverage lift
 #'
 #' What-if experiment: if the given representative disease(s) (`kcd_main`) were
 #' relaxed to standard (auto-approved, every restriction dropped), how much would
@@ -14,11 +14,13 @@
 #' @param applied Per-disease decisions from [match_rule()] (`$applied`).
 #' @param final The baseline wide decision table from [combine_decision()],
 #'   carrying its config-table attributes.
-#' @param kcd_main A single regular expression matched against `kcd_main`:
-#'   `"M51"` relaxes M51 and any sub-code (`M510`, `M512`, ...), `"M5[0-3]|K635"`
-#'   relaxes a family (combine alternatives with `|`), and `"^M51$"` relaxes
-#'   exactly `M51`. Codes carry no regex metacharacters, so a plain code is a safe
-#'   substring pattern.
+#' @param kcd_main One or more patterns matched against `kcd_main`, relaxed
+#'   together. A single string is a regex: `"M51"` relaxes M51 and any sub-code
+#'   (`M510`, `M512`, ...), and `"^M51$"` relaxes exactly `M51`. A character
+#'   vector is OR'd, so the representative codes from [screen_relaxation()] can be
+#'   passed straight in -- `c("M543", "M542", "M13")` relaxes all three at once
+#'   (same as `"M543|M542|M13"`). Codes carry no regex metacharacters, so a plain
+#'   code is a safe substring pattern.
 #' @param mode How much to relax a matched target disease: `"review_only"`
 #'   (default) turns only its manual-review decisions into standard, keeping any
 #'   exclusions, loadings, reductions, and declines; `"full"` turns every decision
@@ -36,13 +38,13 @@
 #'   manual review that the decline had outranked, the insured now routes to
 #'   review instead of auto-decline. `mode = "review_only"` keeps declines and so
 #'   only ever raises the auto share.
-#' @seealso [relax_impact()] to rank every disease, [tabulate_decision()],
+#' @seealso [screen_relaxation()] to rank every disease, [tabulate_decision()],
 #'   [combine_decision()].
 #' @export
-relax_disease <- function(applied, final, kcd_main, mode = c("review_only", "full")) {
+simulate_relaxation <- function(applied, final, kcd_main, mode = c("review_only", "full")) {
   mode <- match.arg(mode)
-  if (length(kcd_main) != 1L)
-    stop("`kcd_main` must be a single regex; combine alternatives with '|', e.g. \"M51|N50\".")
+  if (length(kcd_main) < 1L || anyNA(kcd_main) || any(!nzchar(kcd_main)))
+    stop("`kcd_main` must be one or more non-empty patterns.")
   decision_table  <- attr(final, "decision_table")
   exclusion_table <- attr(final, "exclusion_table")
   reduction_table <- attr(final, "reduction_table")
@@ -54,7 +56,7 @@ relax_disease <- function(applied, final, kcd_main, mode = c("review_only", "ful
   role          <- decision_table$role
   standard      <- decision_table$code[!is.na(role) & role == "standard"][1L]
   manual_review <- decision_table$code[!is.na(role) & role == "manual_review"][1L]
-  target        <- kcd_main
+  target        <- paste(kcd_main, collapse = "|")   # a vector of codes -> OR'd
 
   base <- tabulate_decision(final)[, .(auto_base = sum(prop[auto == "1"]),
                                        n_total   = sum(n)), by = coverage]
