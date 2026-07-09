@@ -22,6 +22,10 @@
 #'     how often each anchor (sdate-forward vs edate-backward) produces an
 #'     impossible date, by span direction.}
 #'   \item{`gender_dist`, `age_stat`, `missing_required`}{value profile.}
+#'   \item{`no_diagnosis`}{rows with every `kcd` empty (which `clean_icis()`
+#'     drops), split by whether treatment values (`hos_day`/`sur_cnt`/`hos_cnt`)
+#'     are present vs all zero, plus the count of insured with no coded row at
+#'     all.}
 #' }
 #'
 #' @param dt An ICIS claim table (`data.table` or coercible).
@@ -151,6 +155,25 @@ diagnose_icis <- function(dt, verbose = TRUE) {
   missing_required <- vapply(dt[, ..required],
                              function(v) sum(is.na(v) | (is.character(v) & !nzchar(trimws(v)))), numeric(1))
 
+  # --- no-diagnosis rows (every kcd empty; clean_icis drops these) ----------
+  # split by whether the row still carries treatment (hospitalisation/surgery) --
+  # a coded-less row with treatment is a real claim missing its diagnosis, while
+  # an all-zero row is an empty record.
+  no_diagnosis <- NULL
+  kcd_cols <- intersect(paste0("kcd", 0:4), names(dt))
+  if (length(kcd_cols)) {
+    no_code <- Reduce(`&`, lapply(kcd_cols, function(col) !.is_present(dt[[col]])))
+    tx_cols <- intersect(c("hos_day", "sur_cnt", "hos_cnt"), names(dt))
+    has_tx  <- if (length(tx_cols))
+      Reduce(`|`, lapply(tx_cols, function(col) !is.na(dt[[col]]) & dt[[col]] > 0)) else logical(n_row)
+    no_diagnosis <- list(
+      all_empty      = .count_mask(no_code),
+      with_treatment = .count_within(has_tx, no_code),
+      all_zero       = .count_within(!has_tx, no_code),
+      all_empty_ids  = n_id - uniqueN(id[!no_code])   # insured with no coded row at all
+    )
+  }
+
   out <- list(
     n_row            = n_row,
     n_id             = n_id,
@@ -161,7 +184,8 @@ diagnose_icis <- function(dt, verbose = TRUE) {
     recompute_bound  = recompute_bound,
     gender_dist      = gender_dist,
     age_stat         = age_stat,
-    missing_required = missing_required
+    missing_required = missing_required,
+    no_diagnosis     = no_diagnosis
   )
 
   if (verbose) .print_diagnose(out)
@@ -240,6 +264,15 @@ diagnose_icis <- function(dt, verbose = TRUE) {
         out$age_stat$min, out$age_stat$max, .comma(out$age_stat$n_zero), .comma(out$age_stat$n_na)))
   miss <- out$missing_required[out$missing_required > 0]
   .line("missing/empty (required)", if (length(miss)) .dist(miss) else "none")
+
+  if (!is.null(out$no_diagnosis)) {
+    nd <- out$no_diagnosis
+    .header("no diagnosis (all kcd empty; clean_icis drops these rows)")
+    .counts("all kcd empty", nd$all_empty)
+    .counts("  with treatment (hos/sur)", nd$with_treatment)
+    .counts("  all zero", nd$all_zero)
+    .icount("ids with no coded row", nd$all_empty_ids, "-> dropped entirely")
+  }
 }
 
 # --- low-level helpers ------------------------------------------------------

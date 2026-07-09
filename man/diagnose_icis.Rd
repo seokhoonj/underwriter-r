@@ -39,5 +39,9 @@ base).}
 how often each anchor (sdate-forward vs edate-backward) produces an
 impossible date, by span direction.}
 \item{\code{gender_dist}, \code{age_stat}, \code{missing_required}}{value profile.}
+\item{\code{no_diagnosis}}{rows with every \code{kcd} empty (which \code{clean_icis()}
+drops), split by whether treatment values (\code{hos_day}/\code{sur_cnt}/\code{hos_cnt})
+are present vs all zero, plus the count of insured with no coded row at
+all.}
 }
 }
