@@ -12,14 +12,16 @@ trace_decision(applied, final, id)
 \item{final}{A wide final-decision table from \code{\link[=combine_decision]{combine_decision()}}, carrying
 its config-table attributes.}
 
-\item{id}{The single insured id to trace.}
+\item{id}{The single insured id to trace (must be present in \code{final}). An id
+with no diagnosis in \code{applied} -- an automatic pass recorded by
+\code{\link[=combine_decision]{combine_decision()}}'s \code{pass_ids} -- is traced as a pass on every coverage.}
 }
 \value{
-A \code{data.table}, one row per coverage that received any per-disease
-decision, with columns \code{coverage}, \code{diseases} (the contributing
-\code{kcd_main:code} inputs, \code{" | "}-separated), \code{computed} (the decision
-recomputed for this id), \code{stored} (the value in \code{final}), and \code{ok}
-(\code{computed == stored}).
+A \code{data.table}, one row per coverage, with columns \code{coverage},
+\code{diseases} (the contributing \code{kcd_main:code} inputs, \code{" | "}-separated),
+\code{computed} (the decision recomputed for this id), \code{stored} (the value in
+\code{final}), and \code{ok} (\code{computed == stored}). A coverage present on only one
+side surfaces as a row with \code{ok = FALSE}.
 }
 \description{
 For a single \code{id}, shows how each coverage's final decision was built from the

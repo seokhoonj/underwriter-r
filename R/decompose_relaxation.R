@@ -32,7 +32,12 @@ decompose_relaxation <- function(applied, final, kcd_main, mode = c("review_only
   targets <- unique(kcd_main)
   if (length(targets) < 2L)
     stop("`kcd_main` must name at least two representative codes to relax together.")
-  total_cells <- nrow(final) * (ncol(final) - 1L)
+  # denominator = evaluated (non-empty) decision cells, matching screen_relaxation()
+  # and tabulate_decision() so the two functions' auto_lift are on the same base.
+  final_dt    <- as.data.table(final)
+  total_cells <- sum(vapply(setdiff(names(final_dt), "id"),
+                            function(cc) sum(!is.na(final_dt[[cc]]) & nzchar(final_dt[[cc]])),
+                            integer(1)))
 
   flips <- function(regex) sum(simulate_relaxation(applied, final, regex, mode = mode)$n_flipped)
   marginal   <- vapply(targets, function(code) flips(paste0("^", code, "$")), numeric(1))

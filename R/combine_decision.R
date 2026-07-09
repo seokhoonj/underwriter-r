@@ -12,19 +12,21 @@
 #' @param applied The per-disease decisions from [match_rule()] (`$applied`).
 #' @param decision_table Decision-code table with columns `code`, `priority`
 #'   (lower = worse), `combiner` (`priority`/`exclusion`/`loading`/`reduction`),
-#'   and `role` (marks the engine-emitted codes: `standard`, `decline`,
-#'   `manual_review`).
+#'   `role` (marks the engine-emitted codes: `standard`, `decline`,
+#'   `manual_review` -- a `manual_review` row is required, since unmatched
+#'   diseases route there), and `auto` (`1`/`0`, read by [tabulate_decision()] /
+#'   [plot_decision()] to flag which codes count as automatic).
 #' @param exclusion_table,reduction_table Period-code tables listing the valid
 #'   `mark`s (`"5i"` = 5 years minus elapsed, `"3"` = 3 years, `"99"` = whole
 #'   period); the period logic is parsed from the mark itself.
 #' @param loading_table Columns `lower`, `decision`.
 #' @param decision_cols Coverage decision columns (default: the `"decision_cols"`
 #'   attribute set by [match_rule()]).
+#' @param max_sites Maximum distinct exclusion sites before a coverage declines.
 #' @param pass_ids Optional ids to record as an automatic pass -- standard on
 #'   every coverage -- even though they have no disease-based decision, e.g.
 #'   applicants whose claims carry no diagnosis code (no disease to restrict on).
 #'   They are appended to the result so downstream summaries count them as auto.
-#' @param max_sites Maximum distinct exclusion sites before a coverage declines.
 #' @return A wide `data.table`, one row per `id`, one column per coverage. The
 #'   four supplied tables ride along as attributes (`decision_table`,
 #'   `exclusion_table`, `reduction_table`, `loading_table`), together with
@@ -39,6 +41,8 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   priority <- setNames(as.integer(decision_table$priority), decision_table$code)
   combiner <- setNames(decision_table$combiner, decision_table$code)
   letter   <- .decision_letters(decision_table, priority)
+  if (is.na(letter$manual_review))
+    stop("`decision_table` needs a row with role == \"manual_review\"; unmatched diseases route there.")
 
   long <- .melt_decisions(applied, decision_cols, combiner, letter$manual_review)
 
@@ -137,7 +141,9 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   rows[is.na(index), index := 0L]
   bands  <- loading_table[order(lower)]
   totals <- rows[, .(total = sum(index)), by = .(id, coverage)]
-  totals[, .(id, coverage, dec = bands$decision[findInterval(total, bands$lower)])]
+  # clamp to the lowest band: a sum below the first `lower` would give
+  # findInterval 0, drop the element, and recycle a wrong band across the group.
+  totals[, .(id, coverage, dec = bands$decision[pmax(findInterval(total, bands$lower), 1L)])]
 }
 
 # reduction: resolve the period, keep the longest. `letter` is the company's

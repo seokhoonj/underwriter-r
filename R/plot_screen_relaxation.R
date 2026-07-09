@@ -8,9 +8,9 @@
 #' sliced out of `screen_relaxation(..., by_coverage = TRUE)`); when a `coverage`
 #' column is present its name is woven into the axis label and title.
 #'
-#' @param impact A `data.table` from [screen_relaxation()]. If it carries a `coverage`
+#' @param ranking A `data.table` from [screen_relaxation()]. If it carries a `coverage`
 #'   column it must hold a single coverage -- slice one first, e.g.
-#'   `impact[coverage == "adb"]`.
+#'   `ranking[coverage == "adb"]`.
 #' @param top Number of top-ranked diseases to show (default `12`).
 #' @param fill Bar fill colour (default `"#4E79A7"`).
 #' @param title Plot title; by default a sentence naming the coverage for a
@@ -18,16 +18,16 @@
 #' @return A `ggplot` object.
 #' @seealso [screen_relaxation()], [plot_decision()].
 #' @export
-plot_screen_relaxation <- function(impact, top = 12L, fill = "#4E79A7", title = NULL) {
-  impact <- as.data.table(impact)
-  cov <- if ("coverage" %in% names(impact)) {
-    covs <- unique(impact$coverage)
+plot_screen_relaxation <- function(ranking, top = 12L, fill = "#4E79A7", title = NULL) {
+  ranking <- as.data.table(ranking)
+  cov <- if ("coverage" %in% names(ranking)) {
+    covs <- unique(ranking$coverage)
     if (length(covs) > 1L)
-      stop("`impact` holds several coverages; slice one first, e.g. impact[coverage == \"adb\"].")
+      stop("`ranking` holds several coverages; slice one first, e.g. ranking[coverage == \"adb\"].")
     covs
   } else NULL
 
-  d <- head(impact, top)
+  d <- head(ranking, top)
   if (is.null(title))
     title <- if (is.null(cov)) "Diseases to relax for the biggest automation-rate gain"
              else sprintf("%s loopback: diseases that lift the %s coverage", cov, cov)

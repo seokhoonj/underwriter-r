@@ -4,12 +4,12 @@
 \alias{plot_screen_relaxation}
 \title{Plot the disease relaxation ranking}
 \usage{
-plot_screen_relaxation(impact, top = 12L, fill = "#4E79A7", title = NULL)
+plot_screen_relaxation(ranking, top = 12L, fill = "#4E79A7", title = NULL)
 }
 \arguments{
-\item{impact}{A \code{data.table} from \code{\link[=screen_relaxation]{screen_relaxation()}}. If it carries a \code{coverage}
+\item{ranking}{A \code{data.table} from \code{\link[=screen_relaxation]{screen_relaxation()}}. If it carries a \code{coverage}
 column it must hold a single coverage -- slice one first, e.g.
-\code{impact[coverage == "adb"]}.}
+\code{ranking[coverage == "adb"]}.}
 
 \item{top}{Number of top-ranked diseases to show (default \code{12}).}
 

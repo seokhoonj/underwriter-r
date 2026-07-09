@@ -30,7 +30,7 @@ map_disease <- function(long, disease_table) {
   unmapped <- long[is.na(kcd_main), which = TRUE]
   if (length(unmapped)) {
     fallback <- disease_table[.(substr(long$kcd[unmapped], 1L, 3L)), on = .(kcd),
-                             .(kcd_main, sub_chk, lookback_mon)]
+                             .(kcd_main, sub_chk, lookback_mon), mult = "first"]   # one row per key
     long[unmapped, `:=`(kcd_main = fallback$kcd_main, sub_chk = fallback$sub_chk,
                         lookback_mon = fallback$lookback_mon)]
   }
