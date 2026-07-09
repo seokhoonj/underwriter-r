@@ -65,5 +65,6 @@ screen_relaxation <- function(applied, final, by_coverage = FALSE) {
     out[, auto_lift := n_flipped / total_cells]
     setorder(out, -n_flipped)
   }
-  out[]
+  setattr(out, "class", c("relaxation_screening", "data.table", "data.frame"))
+  out
 }

@@ -49,5 +49,6 @@ decompose_relaxation <- function(applied, final, kcd_main, mode = c("review_only
                        levels = c("individual", "combined", "synergy")),
     n_flipped = c(individual, combined, combined - individual))
   out[, auto_lift := n_flipped / total_cells]
-  out[]
+  setattr(out, "class", c("relaxation_decomposition", "data.table", "data.frame"))
+  out
 }

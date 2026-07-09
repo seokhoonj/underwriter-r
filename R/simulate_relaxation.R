@@ -94,5 +94,6 @@ simulate_relaxation <- function(applied, final, kcd_main, mode = c("review_only"
   out[, n_total := NULL]
   setcolorder(out, c("coverage", "auto_base", "auto_relaxed", "lift", "n_flipped"))
   setorder(out, -lift)
-  out[]
+  setattr(out, "class", c("relaxation_simulation", "data.table", "data.frame"))
+  out
 }
