@@ -26,3 +26,6 @@ AGENT.md
 .codex/
 GEMINI.md
 .gemini/
+
+*.tar.gz
+*.Rcheck/
