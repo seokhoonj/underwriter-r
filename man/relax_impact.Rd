@@ -4,7 +4,7 @@
 \alias{relax_impact}
 \title{Rank diseases by the auto-rate lift of relaxing each}
 \usage{
-relax_impact(applied, final, by_coverage = TRUE)
+relax_impact(applied, final, by_coverage = FALSE)
 }
 \arguments{
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
@@ -12,9 +12,9 @@ relax_impact(applied, final, by_coverage = TRUE)
 \item{final}{The wide decision table from \code{\link[=combine_decision]{combine_decision()}}, carrying its
 config-table attributes.}
 
-\item{by_coverage}{If \code{TRUE} (default), break the ranking down per coverage --
-one row per \verb{(kcd_main, coverage)} with that coverage's own \code{auto_lift},
-sorted within each coverage; \code{FALSE} aggregates each disease across all
+\item{by_coverage}{If \code{TRUE}, break the ranking down per coverage -- one row
+per \verb{(kcd_main, coverage)} with that coverage's own \code{auto_lift}, sorted
+within each coverage; default \code{FALSE} aggregates each disease across all
 coverages.}
 }
 \value{

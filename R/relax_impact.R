@@ -15,9 +15,9 @@
 #' @param applied Per-disease decisions from [match_rule()] (`$applied`).
 #' @param final The wide decision table from [combine_decision()], carrying its
 #'   config-table attributes.
-#' @param by_coverage If `TRUE` (default), break the ranking down per coverage --
-#'   one row per `(kcd_main, coverage)` with that coverage's own `auto_lift`,
-#'   sorted within each coverage; `FALSE` aggregates each disease across all
+#' @param by_coverage If `TRUE`, break the ranking down per coverage -- one row
+#'   per `(kcd_main, coverage)` with that coverage's own `auto_lift`, sorted
+#'   within each coverage; default `FALSE` aggregates each disease across all
 #'   coverages.
 #' @return A `data.table` sorted by `n_flipped` descending, with `kcd_main`,
 #'   `n_id` (insured moved off review), `n_flipped` (`insured x coverage` cells
@@ -25,7 +25,7 @@
 #'   `coverage` when `by_coverage = TRUE`.
 #' @seealso [relax_disease()] for one disease's per-coverage detail.
 #' @export
-relax_impact <- function(applied, final, by_coverage = TRUE) {
+relax_impact <- function(applied, final, by_coverage = FALSE) {
   decision_cols  <- attr(applied, "decision_cols")
   decision_table <- attr(final, "decision_table")
   if (is.null(decision_cols) || is.null(decision_table))
