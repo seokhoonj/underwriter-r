@@ -4,19 +4,24 @@
 \alias{rank_disease}
 \title{Rank diseases by the auto-rate lift of relaxing each}
 \usage{
-rank_disease(applied, final)
+rank_disease(applied, final, by_coverage = FALSE)
 }
 \arguments{
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
 
 \item{final}{The wide decision table from \code{\link[=combine_decision]{combine_decision()}}, carrying its
 config-table attributes.}
+
+\item{by_coverage}{If \code{TRUE}, break the ranking down per coverage -- one row
+per \verb{(kcd_main, coverage)} with that coverage's own \code{auto_lift}, sorted
+within each coverage; default \code{FALSE} aggregates each disease across all
+coverages.}
 }
 \value{
-A \code{data.table}, one row per disease sorted by \code{n_flipped} descending,
-with \code{kcd_main}, \code{n_id} (insured moved off review), \code{n_flipped}
-(\verb{insured x coverage} cells flipped), and \code{auto_lift} (\code{n_flipped} over all
-decision cells).
+A \code{data.table} sorted by \code{n_flipped} descending, with \code{kcd_main},
+\code{n_id} (insured moved off review), \code{n_flipped} (\verb{insured x coverage} cells
+flipped), and \code{auto_lift} (\code{n_flipped} over the decision cells); plus
+\code{coverage} when \code{by_coverage = TRUE}.
 }
 \description{
 Which representative disease, if relaxed, moves the most insured off manual

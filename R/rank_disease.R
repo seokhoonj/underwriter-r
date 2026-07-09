@@ -15,13 +15,17 @@
 #' @param applied Per-disease decisions from [match_rule()] (`$applied`).
 #' @param final The wide decision table from [combine_decision()], carrying its
 #'   config-table attributes.
-#' @return A `data.table`, one row per disease sorted by `n_flipped` descending,
-#'   with `kcd_main`, `n_id` (insured moved off review), `n_flipped`
-#'   (`insured x coverage` cells flipped), and `auto_lift` (`n_flipped` over all
-#'   decision cells).
+#' @param by_coverage If `TRUE`, break the ranking down per coverage -- one row
+#'   per `(kcd_main, coverage)` with that coverage's own `auto_lift`, sorted
+#'   within each coverage; default `FALSE` aggregates each disease across all
+#'   coverages.
+#' @return A `data.table` sorted by `n_flipped` descending, with `kcd_main`,
+#'   `n_id` (insured moved off review), `n_flipped` (`insured x coverage` cells
+#'   flipped), and `auto_lift` (`n_flipped` over the decision cells); plus
+#'   `coverage` when `by_coverage = TRUE`.
 #' @seealso [relax_disease()] for one disease's per-coverage detail.
 #' @export
-rank_disease <- function(applied, final) {
+rank_disease <- function(applied, final, by_coverage = FALSE) {
   decision_cols  <- attr(applied, "decision_cols")
   decision_table <- attr(final, "decision_table")
   if (is.null(decision_cols) || is.null(decision_table))
@@ -50,8 +54,16 @@ rank_disease <- function(applied, final) {
 
   u_src[, n_src := uniqueN(kcd_main), by = .(id, coverage)]
   sole <- u_src[n_src == 1L]                                       # sole cause -> flips if relaxed
-  out <- sole[, .(n_id = uniqueN(id), n_flipped = .N), by = kcd_main]
-  out[, auto_lift := n_flipped / total_cells]
-  setorder(out, -n_flipped)
+  if (by_coverage) {
+    out <- sole[, .(n_id = uniqueN(id), n_flipped = .N), by = .(kcd_main, coverage)]
+    out <- merge(out, final_long[, .(n_cov = .N), by = coverage], by = "coverage")
+    out[, auto_lift := n_flipped / n_cov][, n_cov := NULL]
+    setcolorder(out, c("kcd_main", "coverage", "n_id", "n_flipped", "auto_lift"))
+    setorder(out, coverage, -n_flipped)
+  } else {
+    out <- sole[, .(n_id = uniqueN(id), n_flipped = .N), by = kcd_main]
+    out[, auto_lift := n_flipped / total_cells]
+    setorder(out, -n_flipped)
+  }
   out[]
 }
