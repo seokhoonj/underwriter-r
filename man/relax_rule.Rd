@@ -4,7 +4,7 @@
 \alias{relax_rule}
 \title{Relax a rule (or set of rules) and measure the per-coverage lift}
 \usage{
-relax_rule(applied, final, kcd_main)
+relax_rule(applied, final, kcd_main, coverage = NULL)
 }
 \arguments{
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
@@ -19,6 +19,9 @@ vector is OR'd, so the representative codes from \code{\link[=list_rule_impact]{
 passed straight in -- \code{c("M543", "M542", "M13")} relaxes all three at once
 (same as \code{"M543|M542|M13"}). Codes carry no regex metacharacters, so a plain
 code is a safe substring pattern.}
+
+\item{coverage}{Optional coverage name(s) to restrict the result to (e.g.
+\code{"adb"} or \code{c("hos", "sur")}); default \code{NULL} keeps every coverage.}
 }
 \value{
 A \code{relaxed_rule} object (a \code{data.table}), one row per coverage sorted

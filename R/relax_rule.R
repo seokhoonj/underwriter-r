@@ -24,6 +24,8 @@
 #'   passed straight in -- `c("M543", "M542", "M13")` relaxes all three at once
 #'   (same as `"M543|M542|M13"`). Codes carry no regex metacharacters, so a plain
 #'   code is a safe substring pattern.
+#' @param coverage Optional coverage name(s) to restrict the result to (e.g.
+#'   `"adb"` or `c("hos", "sur")`); default `NULL` keeps every coverage.
 #' @return A `relaxed_rule` object (a `data.table`), one row per coverage sorted
 #'   by `lift` descending, with `auto_base` (baseline auto share), `auto_relaxed`
 #'   (after relaxing), `lift` (the increase), and `n_flipped` (insured moved from
@@ -33,7 +35,7 @@
 #' @seealso [list_rule_impact()] for every rule's marginal impact,
 #'   [tabulate_decision()], [combine_decision()].
 #' @export
-relax_rule <- function(applied, final, kcd_main) {
+relax_rule <- function(applied, final, kcd_main, coverage = NULL) {
   if (length(kcd_main) < 1L || anyNA(kcd_main) || any(!nzchar(kcd_main)))
     stop("`kcd_main` must be one or more non-empty patterns.")
   decision_table  <- attr(final, "decision_table")
@@ -80,6 +82,7 @@ relax_rule <- function(applied, final, kcd_main) {
   out[, n_total := NULL]
   setcolorder(out, c("coverage", "auto_base", "auto_relaxed", "lift", "n_flipped"))
   setorder(out, -lift)
+  if (!is.null(coverage)) { pick <- coverage; out <- out[coverage %in% pick] }
   setattr(out, "class", c("relaxed_rule", "data.table", "data.frame"))
   out
 }
