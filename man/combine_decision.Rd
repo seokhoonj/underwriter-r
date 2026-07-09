@@ -22,8 +22,8 @@ combine_decision(
 (lower = worse), \code{combiner} (\code{priority}/\code{exclusion}/\code{loading}/\code{reduction}),
 \code{role} (marks the engine-emitted codes: \code{standard}, \code{decline},
 \code{manual_review} -- a \code{manual_review} row is required, since unmatched
-diseases route there), and \code{auto} (\code{1}/\code{0}, read by \code{\link[=tabulate_decision]{tabulate_decision()}} /
-\code{\link[=plot_decision]{plot_decision()}} to flag which codes count as automatic).}
+diseases route there), and \code{auto} (\code{1}/\code{0}, read by \code{\link[=tabulate_decision]{tabulate_decision()}}
+and \code{plot()} to flag which codes count as automatic).}
 
 \item{exclusion_table, reduction_table}{Period-code tables listing the valid
 \code{mark}s (\code{"5i"} = 5 years minus elapsed, \code{"3"} = 3 years, \code{"99"} = whole
@@ -47,8 +47,7 @@ four supplied tables ride along as attributes (\code{decision_table},
 \code{exclusion_table}, \code{reduction_table}, \code{loading_table}), together with
 \code{decision_cols} (the rule-set coverage order, which the \code{id ~ coverage}
 reshape would otherwise sort away), so downstream summaries such as
-\code{\link[=tabulate_decision]{tabulate_decision()}} and \code{\link[=plot_decision]{plot_decision()}} can recover them without
-re-passing.
+\code{\link[=tabulate_decision]{tabulate_decision()}} and \code{plot()} can recover them without re-passing.
 }
 \description{
 Collapses the per-disease decisions from \code{\link[=match_rule]{match_rule()}} to one decision per

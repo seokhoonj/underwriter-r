@@ -1,26 +1,31 @@
 #' Plot the decision composition per coverage
 #'
-#' A stacked bar of each coverage's decision composition from
-#' [tabulate_decision()] -- by default the auto-decided vs manual-review share --
-#' with each segment's percentage labelled at its centre.
+#' `plot()` method for a [combine_decision()] result (class `combined_decision`):
+#' a stacked bar of each coverage's decision composition from [tabulate_decision()]
+#' -- by default the auto-decided vs manual-review share -- with each segment's
+#' percentage labelled at its centre.
 #'
-#' @param final A wide final-decision table from [combine_decision()].
+#' @param x A [combine_decision()] result (class `combined_decision`).
 #' @param group Column to stack and colour by: `"auto"` (default) or
 #'   `"category"`.
 #' @param order Coverage order along the x-axis: `"auto_high"` (default, highest
 #'   auto-decided share first), `"auto_low"` (lowest first), or `"column"` (the
-#'   coverage column order defined in the rule set, from `final`'s
-#'   `decision_cols` attribute).
+#'   coverage column order defined in the rule set, from the `decision_cols`
+#'   attribute).
 #' @param min_label Segments whose share is at or below this are left unlabelled,
 #'   to keep thin slivers from cluttering (default `0.03`).
 #' @param title Plot title (default `"Decision composition per coverage"`).
+#' @param ... Unused.
 #' @return A `ggplot` object. When `group = "auto"`, auto-decided (`1`) is blue
 #'   and manual review (`0`) is red.
-#' @seealso [tabulate_decision()].
+#' @seealso [combine_decision()], [tabulate_decision()].
+#' @method plot combined_decision
 #' @export
-plot_decision <- function(final, group = c("auto", "category"),
-                          order = c("auto_high", "auto_low", "column"), min_label = 0.03,
-                          title = "Decision composition per coverage") {
+plot.combined_decision <- function(x, ..., group = c("auto", "category"),
+                                   order = c("auto_high", "auto_low", "column"),
+                                   min_label = 0.03,
+                                   title = "Decision composition per coverage") {
+  final <- x
   group <- match.arg(group)
   order <- match.arg(order)
   tab   <- tabulate_decision(final)
@@ -45,7 +50,7 @@ plot_decision <- function(final, group = c("auto", "category"),
       position = ggplot2::position_stack(vjust = 0.5), na.rm = TRUE) +
     ggplot2::scale_y_continuous(breaks = seq(0, 1, 0.25), labels = seq(0, 100, 25)) +
     ggplot2::labs(title = title, y = "percent", fill = group) +
-    ggplot2::theme_bw() +   # white panel, black border, no gridlines (like ggshort::theme_view)
+    ggplot2::theme_bw() +   # white panel, black border, no gridlines
     ggplot2::theme(
       axis.text.x      = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5),
       panel.grid.major = ggplot2::element_blank(),

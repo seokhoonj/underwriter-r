@@ -2,45 +2,45 @@
 % Please edit documentation in R/plot-relaxation.R
 \name{plot.relaxation}
 \alias{plot.relaxation}
-\alias{plot.relaxation_screening}
-\alias{plot.relaxation_simulation}
-\title{Plot a disease-relaxation result}
+\alias{plot.rule_impact_list}
+\alias{plot.relaxed_rule}
+\title{Plot a rule-relaxation result}
 \usage{
-\method{plot}{relaxation_screening}(x, ..., coverage = NULL, top = 12L, fill = "#4E79A7", title = NULL)
+\method{plot}{rule_impact_list}(x, ..., coverage = NULL, top = 12L, fill = "#4E79A7", title = NULL)
 
-\method{plot}{relaxation_simulation}(x, ..., disease = NULL, top = NULL, title = NULL)
+\method{plot}{relaxed_rule}(x, ..., disease = NULL, top = NULL, title = NULL)
 }
 \arguments{
-\item{x}{A \code{\link[=screen_relaxation]{screen_relaxation()}} result (\code{relaxation_screening}) or a
-\code{\link[=simulate_relaxation]{simulate_relaxation()}} result (\code{relaxation_simulation}).}
+\item{x}{A \code{\link[=list_rule_impact]{list_rule_impact()}} result (\code{rule_impact_list}) or a
+\code{\link[=relax_rule]{relax_rule()}} result (\code{relaxed_rule}).}
 
 \item{...}{Unused.}
 
-\item{coverage}{For a per-coverage screening
-(\code{screen_relaxation(..., by_coverage = TRUE)}), the single coverage to plot,
+\item{coverage}{For a per-coverage ranking
+(\code{list_rule_impact(..., by_coverage = TRUE)}), the single coverage to plot,
 e.g. \code{"adb"}. Slice through this argument rather than subsetting the object
 first -- data.table's \code{[} drops the class that method dispatch relies on.}
 
-\item{top}{Rows to show: screening keeps the top \code{12}, simulation defaults to
-\code{NULL} (every coverage the disease moves).}
+\item{top}{Rows to show: the ranking keeps the top \code{12}, the relaxed-rule plot
+defaults to \code{NULL} (every coverage the rule moves).}
 
-\item{fill}{Bar fill colour for a screening plot.}
+\item{fill}{Bar fill colour for the ranking plot.}
 
 \item{title}{Plot title.}
 
-\item{disease}{Optional disease label woven into a simulation plot's title.}
+\item{disease}{Optional disease label woven into the relaxed-rule plot's title.}
 }
 \value{
-A \code{ggplot} object. In a screening plot the bar length is the
-automation-rate lift; in a simulation plot baseline points are grey and
+A \code{ggplot} object. In the ranking plot the bar length is the
+automation-rate lift; in the relaxed-rule plot baseline points are grey and
 relaxed points blue.
 }
 \description{
-\code{plot()} methods for the relaxation family. A \code{\link[=screen_relaxation]{screen_relaxation()}} result
-(class \code{relaxation_screening}) draws the disease ranking as a horizontal bar
-chart; a \code{\link[=simulate_relaxation]{simulate_relaxation()}} result (class \code{relaxation_simulation}) draws
-the chosen disease's per-coverage before/after as a dumbbell chart.
+\code{plot()} methods: a \code{\link[=list_rule_impact]{list_rule_impact()}} result (class \code{rule_impact_list})
+draws the per-rule marginal-impact ranking as a horizontal bar chart; a
+\code{\link[=relax_rule]{relax_rule()}} result (class \code{relaxed_rule}) draws the chosen rule's
+per-coverage before/after as a dumbbell chart.
 }
 \seealso{
-\code{\link[=screen_relaxation]{screen_relaxation()}}, \code{\link[=simulate_relaxation]{simulate_relaxation()}}, \code{\link[=plot_decision]{plot_decision()}}.
+\code{\link[=list_rule_impact]{list_rule_impact()}}, \code{\link[=relax_rule]{relax_rule()}}, \code{\link[=combine_decision]{combine_decision()}}.
 }

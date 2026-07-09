@@ -14,8 +14,8 @@
 #'   (lower = worse), `combiner` (`priority`/`exclusion`/`loading`/`reduction`),
 #'   `role` (marks the engine-emitted codes: `standard`, `decline`,
 #'   `manual_review` -- a `manual_review` row is required, since unmatched
-#'   diseases route there), and `auto` (`1`/`0`, read by [tabulate_decision()] /
-#'   [plot_decision()] to flag which codes count as automatic).
+#'   diseases route there), and `auto` (`1`/`0`, read by [tabulate_decision()]
+#'   and `plot()` to flag which codes count as automatic).
 #' @param exclusion_table,reduction_table Period-code tables listing the valid
 #'   `mark`s (`"5i"` = 5 years minus elapsed, `"3"` = 3 years, `"99"` = whole
 #'   period); the period logic is parsed from the mark itself.
@@ -32,8 +32,7 @@
 #'   `exclusion_table`, `reduction_table`, `loading_table`), together with
 #'   `decision_cols` (the rule-set coverage order, which the `id ~ coverage`
 #'   reshape would otherwise sort away), so downstream summaries such as
-#'   [tabulate_decision()] and [plot_decision()] can recover them without
-#'   re-passing.
+#'   [tabulate_decision()] and `plot()` can recover them without re-passing.
 #' @export
 combine_decision <- function(applied, decision_table, exclusion_table, reduction_table, loading_table,
                              decision_cols = attr(applied, "decision_cols"), max_sites = 4L,
@@ -68,8 +67,9 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   setattr(final, "exclusion_table", exclusion_table)
   setattr(final, "reduction_table", reduction_table)
   setattr(final, "loading_table",   loading_table)
-  setattr(final, "decision_cols",   decision_cols)   # rule-set coverage order, for plot_decision
-  final[]
+  setattr(final, "decision_cols",   decision_cols)   # rule-set coverage order, for plot()
+  setattr(final, "class", c("combined_decision", "data.table", "data.frame"))
+  final
 }
 
 # Resolve the company's code letters from the table: class letters from the

@@ -1,33 +1,33 @@
-#' Plot a disease-relaxation result
+#' Plot a rule-relaxation result
 #'
-#' `plot()` methods for the relaxation family. A [screen_relaxation()] result
-#' (class `relaxation_screening`) draws the disease ranking as a horizontal bar
-#' chart; a [simulate_relaxation()] result (class `relaxation_simulation`) draws
-#' the chosen disease's per-coverage before/after as a dumbbell chart.
+#' `plot()` methods: a [list_rule_impact()] result (class `rule_impact_list`)
+#' draws the per-rule marginal-impact ranking as a horizontal bar chart; a
+#' [relax_rule()] result (class `relaxed_rule`) draws the chosen rule's
+#' per-coverage before/after as a dumbbell chart.
 #'
-#' @param x A [screen_relaxation()] result (`relaxation_screening`) or a
-#'   [simulate_relaxation()] result (`relaxation_simulation`).
-#' @param coverage For a per-coverage screening
-#'   (`screen_relaxation(..., by_coverage = TRUE)`), the single coverage to plot,
+#' @param x A [list_rule_impact()] result (`rule_impact_list`) or a
+#'   [relax_rule()] result (`relaxed_rule`).
+#' @param coverage For a per-coverage ranking
+#'   (`list_rule_impact(..., by_coverage = TRUE)`), the single coverage to plot,
 #'   e.g. `"adb"`. Slice through this argument rather than subsetting the object
 #'   first -- data.table's `[` drops the class that method dispatch relies on.
-#' @param top Rows to show: screening keeps the top `12`, simulation defaults to
-#'   `NULL` (every coverage the disease moves).
-#' @param fill Bar fill colour for a screening plot.
-#' @param disease Optional disease label woven into a simulation plot's title.
+#' @param top Rows to show: the ranking keeps the top `12`, the relaxed-rule plot
+#'   defaults to `NULL` (every coverage the rule moves).
+#' @param fill Bar fill colour for the ranking plot.
+#' @param disease Optional disease label woven into the relaxed-rule plot's title.
 #' @param title Plot title.
 #' @param ... Unused.
-#' @return A `ggplot` object. In a screening plot the bar length is the
-#'   automation-rate lift; in a simulation plot baseline points are grey and
+#' @return A `ggplot` object. In the ranking plot the bar length is the
+#'   automation-rate lift; in the relaxed-rule plot baseline points are grey and
 #'   relaxed points blue.
-#' @seealso [screen_relaxation()], [simulate_relaxation()], [plot_decision()].
+#' @seealso [list_rule_impact()], [relax_rule()], [combine_decision()].
 #' @name plot.relaxation
 NULL
 
 #' @rdname plot.relaxation
-#' @method plot relaxation_screening
+#' @method plot rule_impact_list
 #' @export
-plot.relaxation_screening <- function(x, ..., coverage = NULL, top = 12L, fill = "#4E79A7",
+plot.rule_impact_list <- function(x, ..., coverage = NULL, top = 12L, fill = "#4E79A7",
                                       title = NULL) {
   x <- as.data.table(x)
   has_cov <- "coverage" %in% names(x)
@@ -61,7 +61,7 @@ plot.relaxation_screening <- function(x, ..., coverage = NULL, top = 12L, fill =
     ggplot2::coord_flip() +
     ggplot2::scale_y_continuous(expand = ggplot2::expansion(mult = c(0, 0.25))) +
     ggplot2::labs(x = "kcd_main", y = ylab, title = title) +
-    ggplot2::theme_bw() +   # white panel, black border, no gridlines (like plot_decision)
+    ggplot2::theme_bw() +   # white panel, black border, no gridlines (like the decision plot)
     ggplot2::theme(
       panel.grid.major = ggplot2::element_blank(),
       panel.grid.minor = ggplot2::element_blank(),
@@ -69,9 +69,9 @@ plot.relaxation_screening <- function(x, ..., coverage = NULL, top = 12L, fill =
 }
 
 #' @rdname plot.relaxation
-#' @method plot relaxation_simulation
+#' @method plot relaxed_rule
 #' @export
-plot.relaxation_simulation <- function(x, ..., disease = NULL, top = NULL, title = NULL) {
+plot.relaxed_rule <- function(x, ..., disease = NULL, top = NULL, title = NULL) {
   d <- as.data.table(x)[auto_relaxed != auto_base]   # only coverages it moves
   if (!nrow(d)) stop("this relaxation moved no coverage; nothing to plot.")
   if (!is.null(top)) d <- head(d[order(-abs(lift))], top)

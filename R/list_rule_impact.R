@@ -1,16 +1,19 @@
-#' Rank diseases by the auto-rate lift of relaxing each
+#' List each rule's marginal (independent) auto-rate impact
 #'
-#' Which representative disease, if relaxed, moves the most insured off manual
-#' review? For every `kcd_main` that drives a coverage to manual review, counts
-#' the insured and the `(insured x coverage)` cells that would flip to auto if it
-#' were relaxed on its own, and ranks them.
+#' For every representative disease (`kcd_main`) whose rule drives a coverage to
+#' manual review, the *marginal* lift of relaxing that rule on its own: the
+#' insured and the `(insured x coverage)` cells that would flip to auto. Each rule
+#' is scored **independently** (no synergy across rules) and the rules are ranked,
+#' so the result is a list of per-rule marginal impacts -- the shortlist of what
+#' to relax. For the *joint* effect of relaxing several rules together (synergy
+#' included) use [relax_rule()]; to split that into marginals vs synergy use
+#' [decompose_relaxed_rule()].
 #'
-#' A manual-review cell flips only when the relaxed disease is its *sole*
+#' A manual-review cell counts for a rule only when that rule is its *sole*
 #' manual-review source (another disease still holding it keeps it on review), so
-#' the lift is exact for relaxing one disease at a time without re-running
+#' the marginal is exact for relaxing one rule at a time without re-running
 #' [combine_decision()] per candidate. Cells already auto-decided -- including
-#' ones a decline outranks -- are not counted. This matches [simulate_relaxation()]'s
-#' `"review_only"` mode (declines are kept, so the auto share can only rise).
+#' ones a decline outranks -- are not counted, so the auto share can only rise.
 #'
 #' @param applied Per-disease decisions from [match_rule()] (`$applied`).
 #' @param final The wide decision table from [combine_decision()], carrying its
@@ -19,13 +22,14 @@
 #'   per `(kcd_main, coverage)` with that coverage's own `auto_lift`, sorted
 #'   within each coverage; default `FALSE` aggregates each disease across all
 #'   coverages.
-#' @return A `data.table` sorted by `n_flipped` descending, with `kcd_main`,
-#'   `n_id` (insured moved off review), `n_flipped` (`insured x coverage` cells
-#'   flipped), and `auto_lift` (`n_flipped` over the decision cells); plus
-#'   `coverage` when `by_coverage = TRUE`.
-#' @seealso [simulate_relaxation()] for one disease's per-coverage detail.
+#' @return A `rule_impact_list` (a `data.table`) sorted by `n_flipped` descending,
+#'   with `kcd_main`, `n_id` (insured moved off review), `n_flipped`
+#'   (`insured x coverage` cells flipped), and `auto_lift` (`n_flipped` over the
+#'   decision cells); plus `coverage` when `by_coverage = TRUE`.
+#' @seealso [relax_rule()] for one rule's per-coverage detail,
+#'   [decompose_relaxed_rule()] for a rule set's marginal/combined/synergy split.
 #' @export
-screen_relaxation <- function(applied, final, by_coverage = FALSE) {
+list_rule_impact <- function(applied, final, by_coverage = FALSE) {
   decision_cols  <- attr(applied, "decision_cols")
   decision_table <- attr(final, "decision_table")
   if (is.null(decision_cols) || is.null(decision_table))
@@ -65,6 +69,6 @@ screen_relaxation <- function(applied, final, by_coverage = FALSE) {
     out[, auto_lift := n_flipped / total_cells]
     setorder(out, -n_flipped)
   }
-  setattr(out, "class", c("relaxation_screening", "data.table", "data.frame"))
+  setattr(out, "class", c("rule_impact_list", "data.table", "data.frame"))
   out
 }
