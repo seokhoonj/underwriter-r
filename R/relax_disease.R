@@ -36,7 +36,8 @@
 #'   manual review that the decline had outranked, the insured now routes to
 #'   review instead of auto-decline. `mode = "review_only"` keeps declines and so
 #'   only ever raises the auto share.
-#' @seealso [tabulate_decision()], [combine_decision()].
+#' @seealso [relax_impact()] to rank every disease, [tabulate_decision()],
+#'   [combine_decision()].
 #' @export
 relax_disease <- function(applied, final, kcd_main, mode = c("review_only", "full")) {
   mode <- match.arg(mode)

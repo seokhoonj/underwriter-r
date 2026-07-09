@@ -25,7 +25,7 @@
 #'   `coverage` when `by_coverage = TRUE`.
 #' @seealso [relax_disease()] for one disease's per-coverage detail.
 #' @export
-rank_disease <- function(applied, final, by_coverage = FALSE) {
+relax_impact <- function(applied, final, by_coverage = FALSE) {
   decision_cols  <- attr(applied, "decision_cols")
   decision_table <- attr(final, "decision_table")
   if (is.null(decision_cols) || is.null(decision_table))

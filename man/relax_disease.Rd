@@ -54,5 +54,6 @@ review instead of auto-decline. \code{mode = "review_only"} keeps declines and s
 only ever raises the auto share.
 }
 \seealso{
-\code{\link[=tabulate_decision]{tabulate_decision()}}, \code{\link[=combine_decision]{combine_decision()}}.
+\code{\link[=relax_impact]{relax_impact()}} to rank every disease, \code{\link[=tabulate_decision]{tabulate_decision()}},
+\code{\link[=combine_decision]{combine_decision()}}.
 }
