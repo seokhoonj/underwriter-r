@@ -12,11 +12,11 @@ relax_disease(applied, final, kcd_main, mode = c("review_only", "full"))
 \item{final}{The baseline wide decision table from \code{\link[=combine_decision]{combine_decision()}},
 carrying its config-table attributes.}
 
-\item{kcd_main}{Representative disease pattern(s), matched against \code{kcd_main}
-as regular expressions combined with OR: \code{"M51"} relaxes M51 and any
-sub-code (\code{M510}, \code{M512}, ...), \code{c("M5[0-3]|K635", "N50")} relaxes a family,
-and \code{"^M51$"} relaxes exactly \code{M51}. Codes carry no regex metacharacters, so
-a plain code is a safe substring pattern.}
+\item{kcd_main}{A single regular expression matched against \code{kcd_main}:
+\code{"M51"} relaxes M51 and any sub-code (\code{M510}, \code{M512}, ...), \code{"M5[0-3]|K635"}
+relaxes a family (combine alternatives with \code{|}), and \code{"^M51$"} relaxes
+exactly \code{M51}. Codes carry no regex metacharacters, so a plain code is a safe
+substring pattern.}
 
 \item{mode}{How much to relax a matched target disease: \code{"review_only"}
 (default) turns only its manual-review decisions into standard, keeping any
