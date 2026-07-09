@@ -75,8 +75,14 @@ relax_disease <- function(applied, final, kcd_main, mode = c("review_only", "ful
   }
   relaxed[tgt, matched := 1L]
 
+  # ids in the baseline but not in `applied` are no-disease auto-passes (see
+  # combine_decision()'s pass_ids); carry them so the relaxed final is scored over
+  # the same population, or every coverage's baseline would look inflated.
+  pass_ids <- setdiff(final$id, unique(as.data.table(applied)$id))
+
   new_final <- combine_decision(relaxed, decision_table, exclusion_table,
-                                reduction_table, loading_table, decision_cols = decision_cols)
+                                reduction_table, loading_table, decision_cols = decision_cols,
+                                pass_ids = pass_ids)
   relaxed_share <- tabulate_decision(new_final)[, .(auto_relaxed = sum(prop[auto == "1"])),
                                                 by = coverage]
 
