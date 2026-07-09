@@ -84,5 +84,5 @@ relax_rule <- function(applied, final, kcd_main, coverage = NULL) {
   setorder(out, -lift)
   if (!is.null(coverage)) { pick <- coverage; out <- out[coverage %in% pick] }
   setattr(out, "class", c("relaxed_rule", "data.table", "data.frame"))
-  out
+  out[]
 }

@@ -2,9 +2,9 @@
 % Please edit documentation in R/list_rule_impact.R
 \name{list_rule_impact}
 \alias{list_rule_impact}
-\title{List each rule's marginal (independent) auto-rate impact}
+\title{List each rule's marginal (independent) auto-rate impact by coverage}
 \usage{
-list_rule_impact(applied, final, by_coverage = FALSE)
+list_rule_impact(applied, final, coverage = NULL)
 }
 \arguments{
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
@@ -12,26 +12,24 @@ list_rule_impact(applied, final, by_coverage = FALSE)
 \item{final}{The wide decision table from \code{\link[=combine_decision]{combine_decision()}}, carrying its
 config-table attributes.}
 
-\item{by_coverage}{If \code{TRUE}, break the ranking down per coverage -- one row
-per \verb{(kcd_main, coverage)} with that coverage's own \code{auto_lift}, sorted
-within each coverage; default \code{FALSE} aggregates each disease across all
-coverages.}
+\item{coverage}{Optional coverage name(s) to restrict to (e.g. \code{"adb"} or
+\code{c("hos", "sur")}); default \code{NULL} lists every coverage.}
 }
 \value{
-A \code{rule_impact_list} (a \code{data.table}) sorted by \code{n_flipped} descending,
-with \code{kcd_main}, \code{n_id} (insured moved off review), \code{n_flipped}
-(\verb{insured x coverage} cells flipped), and \code{auto_lift} (\code{n_flipped} over the
-decision cells); plus \code{coverage} when \code{by_coverage = TRUE}.
+A \code{rule_impact_list} (a \code{data.table}) with \code{coverage}, \code{kcd_main},
+\code{n_id} (insured moved off review), \code{n_flipped} (cells flipped), and
+\code{auto_lift} (\code{n_flipped} over that coverage's cells), sorted within each
+coverage by descending \code{n_flipped}.
 }
 \description{
 For every representative disease (\code{kcd_main}) whose rule drives a coverage to
 manual review, the \emph{marginal} lift of relaxing that rule on its own: the
-insured and the \verb{(insured x coverage)} cells that would flip to auto. Each rule
-is scored \strong{independently} (no synergy across rules) and the rules are ranked,
-so the result is a list of per-rule marginal impacts -- the shortlist of what
-to relax. For the \emph{joint} effect of relaxing several rules together (synergy
-included) use \code{\link[=relax_rule]{relax_rule()}}; to split that into marginals vs synergy use
-\code{\link[=decompose_relaxed_rule]{decompose_relaxed_rule()}}.
+insured and the cells that would flip to auto, per coverage. Each rule is
+scored \strong{independently} (no synergy across rules) and ranked within each
+coverage, so the result is a per-coverage list of marginal rule impacts -- the
+shortlist of what to relax on each coverage. For the \emph{joint} effect of relaxing
+several rules together (synergy included) use \code{\link[=relax_rule]{relax_rule()}}; to split that
+into marginals vs synergy use \code{\link[=decompose_rule_impact]{decompose_rule_impact()}}.
 }
 \details{
 A manual-review cell counts for a rule only when that rule is its \emph{sole}
@@ -42,5 +40,5 @@ ones a decline outranks -- are not counted, so the auto share can only rise.
 }
 \seealso{
 \code{\link[=relax_rule]{relax_rule()}} for one rule's per-coverage detail,
-\code{\link[=decompose_relaxed_rule]{decompose_relaxed_rule()}} for a rule set's marginal/combined/synergy split.
+\code{\link[=decompose_rule_impact]{decompose_rule_impact()}} for a rule set's marginal/combined/synergy split.
 }

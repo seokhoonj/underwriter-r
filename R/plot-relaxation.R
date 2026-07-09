@@ -7,10 +7,10 @@
 #'
 #' @param x A [list_rule_impact()] result (`rule_impact_list`) or a
 #'   [relax_rule()] result (`relaxed_rule`).
-#' @param coverage For a per-coverage ranking
-#'   (`list_rule_impact(..., by_coverage = TRUE)`), the single coverage to plot,
-#'   e.g. `"adb"`. Slice through this argument rather than subsetting the object
-#'   first -- data.table's `[` drops the class that method dispatch relies on.
+#' @param coverage The single coverage to plot from a [list_rule_impact()] result
+#'   (which is per-coverage), e.g. `"adb"`. Slice through this argument rather than
+#'   subsetting the object first -- data.table's `[` drops the class that method
+#'   dispatch relies on.
 #' @param top Rows to show: the ranking keeps the top `12`, the relaxed-rule plot
 #'   defaults to `NULL` (every coverage the rule moves).
 #' @param fill Bar fill colour for the ranking plot.
