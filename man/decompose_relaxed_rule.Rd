@@ -8,8 +8,8 @@ decompose_relaxed_rule(
   applied,
   final,
   kcd_main,
-  coverage = NULL,
-  by_coverage = FALSE
+  by_coverage = FALSE,
+  coverage = NULL
 )
 }
 \arguments{
@@ -21,12 +21,12 @@ decompose_relaxed_rule(
 (e.g. \code{c("M543", "M542", "M13")}) to relax together. Each is matched exactly;
 for regex families relax them with \code{\link[=relax_rule]{relax_rule()}} directly.}
 
-\item{coverage}{Optional coverage name(s) to restrict to (e.g. \code{"adb"} or
-\code{c("hos", "sur")}); default \code{NULL} uses every coverage.}
-
 \item{by_coverage}{If \code{TRUE}, break the decomposition down per coverage --
 columns \code{coverage}, \code{component}, \code{n_flipped}, \code{auto_lift}. Default \code{FALSE}
 aggregates over the (scoped) coverages into the three components.}
+
+\item{coverage}{Optional coverage name(s) to restrict to (e.g. \code{"adb"} or
+\code{c("hos", "sur")}); default \code{NULL} uses every coverage.}
 }
 \value{
 A \code{data.table}. By default three rows -- \code{component}

@@ -12,11 +12,11 @@
 #' @param kcd_main A character vector of two or more exact representative codes
 #'   (e.g. `c("M543", "M542", "M13")`) to relax together. Each is matched exactly;
 #'   for regex families relax them with [relax_rule()] directly.
-#' @param coverage Optional coverage name(s) to restrict to (e.g. `"adb"` or
-#'   `c("hos", "sur")`); default `NULL` uses every coverage.
 #' @param by_coverage If `TRUE`, break the decomposition down per coverage --
 #'   columns `coverage`, `component`, `n_flipped`, `auto_lift`. Default `FALSE`
 #'   aggregates over the (scoped) coverages into the three components.
+#' @param coverage Optional coverage name(s) to restrict to (e.g. `"adb"` or
+#'   `c("hos", "sur")`); default `NULL` uses every coverage.
 #' @return A `data.table`. By default three rows -- `component`
 #'   (`individual`/`combined`/`synergy`), `n_flipped` (insured x coverage cells
 #'   moved off manual review), and `auto_lift` (`n_flipped` over the decision
@@ -25,8 +25,8 @@
 #' @seealso [relax_rule()] for one rule's per-coverage detail,
 #'   [list_rule_impact()] for every rule's marginal impact.
 #' @export
-decompose_relaxed_rule <- function(applied, final, kcd_main, coverage = NULL,
-                                   by_coverage = FALSE) {
+decompose_relaxed_rule <- function(applied, final, kcd_main, by_coverage = FALSE,
+                                   coverage = NULL) {
   targets <- unique(kcd_main)
   if (length(targets) < 2L)
     stop("`kcd_main` must name at least two representative codes to relax together.")
