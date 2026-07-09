@@ -1,5 +1,9 @@
 # underwriter
 
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/seokhoonj/underwriter/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/seokhoonj/underwriter/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
 Automated underwriting simulation from insurance claim history. A data.table
 pipeline that cleanses claim data, maps diagnosis codes to representative
 diseases, aggregates per-insured underwriting inputs, matches them against a rule
