@@ -4,7 +4,13 @@
 \alias{decompose_relaxed_rule}
 \title{Decompose the joint lift of relaxing several rules together}
 \usage{
-decompose_relaxed_rule(applied, final, kcd_main, coverage = NULL)
+decompose_relaxed_rule(
+  applied,
+  final,
+  kcd_main,
+  coverage = NULL,
+  by_coverage = FALSE
+)
 }
 \arguments{
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
@@ -15,15 +21,19 @@ decompose_relaxed_rule(applied, final, kcd_main, coverage = NULL)
 (e.g. \code{c("M543", "M542", "M13")}) to relax together. Each is matched exactly;
 for regex families relax them with \code{\link[=relax_rule]{relax_rule()}} directly.}
 
-\item{coverage}{Optional coverage name(s) to decompose over (e.g. \code{"adb"} or
-\code{c("hos", "sur")}); default \code{NULL} decomposes over every coverage.}
+\item{coverage}{Optional coverage name(s) to restrict to (e.g. \code{"adb"} or
+\code{c("hos", "sur")}); default \code{NULL} uses every coverage.}
+
+\item{by_coverage}{If \code{TRUE}, break the decomposition down per coverage --
+columns \code{coverage}, \code{component}, \code{n_flipped}, \code{auto_lift}. Default \code{FALSE}
+aggregates over the (scoped) coverages into the three components.}
 }
 \value{
-A three-row \code{data.table} with \code{component}
+A \code{data.table}. By default three rows -- \code{component}
 (\code{individual}/\code{combined}/\code{synergy}), \code{n_flipped} (insured x coverage cells
 moved off manual review), and \code{auto_lift} (\code{n_flipped} over the decision
-cells). \code{individual} is the sum of each rule relaxed alone, \code{combined} the
-set relaxed at once, \code{synergy} their difference.
+cells). With \code{by_coverage = TRUE}, one row per \verb{(coverage, component)} with a
+leading \code{coverage} column and that coverage's own \code{auto_lift}.
 }
 \description{
 Relaxing a set of rules at once lifts the automation rate by \emph{more} than the
