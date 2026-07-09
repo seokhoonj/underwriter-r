@@ -22,8 +22,9 @@ combine_decision(
 and \code{role} (marks the engine-emitted codes: \code{standard}, \code{decline},
 \code{manual_review}).}
 
-\item{exclusion_table, reduction_table}{Period-code tables with columns \code{mark},
-\code{base_year}, \code{minus_elapsed}, \code{all_period}.}
+\item{exclusion_table, reduction_table}{Period-code tables listing the valid
+\code{mark}s (\code{"5i"} = 5 years minus elapsed, \code{"3"} = 3 years, \code{"99"} = whole
+period); the period logic is parsed from the mark itself.}
 
 \item{loading_table}{Columns \code{lower}, \code{decision}.}
 

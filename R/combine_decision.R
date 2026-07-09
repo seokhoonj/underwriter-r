@@ -14,8 +14,9 @@
 #'   (lower = worse), `combiner` (`priority`/`exclusion`/`loading`/`reduction`),
 #'   and `role` (marks the engine-emitted codes: `standard`, `decline`,
 #'   `manual_review`).
-#' @param exclusion_table,reduction_table Period-code tables with columns `mark`,
-#'   `base_year`, `minus_elapsed`, `all_period`.
+#' @param exclusion_table,reduction_table Period-code tables listing the valid
+#'   `mark`s (`"5i"` = 5 years minus elapsed, `"3"` = 3 years, `"99"` = whole
+#'   period); the period logic is parsed from the mark itself.
 #' @param loading_table Columns `lower`, `decision`.
 #' @param decision_cols Coverage decision columns (default: the `"decision_cols"`
 #'   attribute set by [match_rule()]).
@@ -149,12 +150,11 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 # (whole period). Resolve it to a month count given the elapsed days; a result
 # <= 0 means the restriction has expired. 30 days = 1 month, truncated.
 .resolve_months <- function(mark, elapsed_days, period_table) {
-  row     <- match(mark, period_table$mark)
-  elapsed <- as.integer(elapsed_days %/% 30L)
-  years   <- period_table$base_year[row]
-  months  <- fifelse(period_table$minus_elapsed[row], years * 12L - elapsed, years * 12L)
-  months[period_table$all_period[row]] <- 9999L
-  months[is.na(row)] <- NA_integer_
+  elapsed   <- as.integer(elapsed_days %/% 30L)
+  base_year <- suppressWarnings(as.integer(sub("i", "", mark)))   # "5i"/"3" -> 5/3
+  months    <- fifelse(grepl("i$", mark), base_year * 12L - elapsed, base_year * 12L)
+  months[mark == "99"] <- 9999L                       # "99" = whole period
+  months[!mark %in% period_table$mark] <- NA_integer_ # mark not in the table = invalid
   months
 }
 .months_str <- function(months) fifelse(months >= 9999L, "99", as.character(months))
