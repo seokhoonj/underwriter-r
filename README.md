@@ -1,7 +1,7 @@
 # underwriter
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/seokhoonj/underwriter/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/seokhoonj/underwriter/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/seokhoonj/underwriter-r/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/seokhoonj/underwriter-r/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 Automated underwriting simulation from insurance claim history. A data.table
@@ -16,7 +16,7 @@ are supplied at run time, so it is not tied to any one insurer.
 
 ```r
 # install.packages("remotes")
-remotes::install_github("seokhoonj/underwriter")
+remotes::install_github("seokhoonj/underwriter-r")
 ```
 
 ## Pipeline
