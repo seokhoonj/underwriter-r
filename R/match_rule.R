@@ -13,7 +13,7 @@
 #' expected to follow a fixed schema: keys, band bounds, and declaration
 #' attributes (the non-decision columns), plus one decision column per product.
 #'
-#' @param agg Per-`(id, kcd_main)` inputs from [aggregate_disease()],
+#' @param aggregated Per-`(id, kcd_main)` inputs from [aggregate_disease()],
 #'   carrying `age`.
 #' @param rule A rule-set `data.table`.
 #' @return A list with `applied` (the input plus `matched`, `conflict`, and one
@@ -27,11 +27,11 @@
 #'   matched rules disagree, so `n_conflict <= n_multi_matched`).
 #' @seealso [combine_decision()].
 #' @export
-match_rule <- function(agg, rule) {
+match_rule <- function(aggregated, rule) {
   rule <- as.data.table(rule)[decl_yn == 0L]
   decision_cols <- setdiff(names(rule), .NON_DECISION_COLS)
 
-  input <- as.data.table(copy(agg))
+  input <- as.data.table(copy(aggregated))
   input[, rid := .I]
 
   # keep only the band-match columns + rule id + decisions; the non-equi join
@@ -75,7 +75,7 @@ match_rule <- function(agg, rule) {
   list(
     applied         = applied,
     decision_cols   = decision_cols,
-    unmatched       = applied[matched == 0L, .SD, .SDcols = names(agg)],
+    unmatched       = applied[matched == 0L, .SD, .SDcols = names(aggregated)],
     multi_matched   = multi_matched,
     conflict        = conflict,
     n_unmatched     = applied[matched == 0L, .N],

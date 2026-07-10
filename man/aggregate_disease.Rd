@@ -4,10 +4,10 @@
 \alias{aggregate_disease}
 \title{Aggregate mapped diagnoses to per-insured underwriting inputs}
 \usage{
-aggregate_disease(disease_long)
+aggregate_disease(mapped)
 }
 \arguments{
-\item{disease_long}{A long, mapped table from \code{\link[=map_disease]{map_disease()}}.}
+\item{mapped}{A long, mapped table from \code{\link[=map_disease]{map_disease()}}.}
 }
 \value{
 A \code{data.table}, one row per \verb{(id, kcd_main)}, with \code{age}, \code{hos_day},

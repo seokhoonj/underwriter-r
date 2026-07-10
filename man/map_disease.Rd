@@ -4,16 +4,16 @@
 \alias{map_disease}
 \title{Map diagnosis codes to their representative disease and scope flags}
 \usage{
-map_disease(long, disease_table)
+map_disease(melted, disease_table)
 }
 \arguments{
-\item{long}{A long table from \code{\link[=melt_kcd]{melt_kcd()}}.}
+\item{melted}{A melted table from \code{\link[=melt_kcd]{melt_kcd()}}.}
 
 \item{disease_table}{A lookup table with columns \code{kcd}, \code{kcd_main}, \code{sub_chk},
 \code{lookback_mon}.}
 }
 \value{
-\code{long} with \code{kcd_main}, \code{sub_chk}, \code{lookback_mon}, \code{review},
+\code{melted} with \code{kcd_main}, \code{sub_chk}, \code{lookback_mon}, \code{review},
 \code{in_lookback}, \code{in_5yr} added.
 }
 \description{

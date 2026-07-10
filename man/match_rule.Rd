@@ -4,10 +4,10 @@
 \alias{match_rule}
 \title{Match aggregated inputs against a rule set}
 \usage{
-match_rule(agg, rule)
+match_rule(aggregated, rule)
 }
 \arguments{
-\item{agg}{Per-\verb{(id, kcd_main)} inputs from \code{\link[=aggregate_disease]{aggregate_disease()}},
+\item{aggregated}{Per-\verb{(id, kcd_main)} inputs from \code{\link[=aggregate_disease]{aggregate_disease()}},
 carrying \code{age}.}
 
 \item{rule}{A rule-set \code{data.table}.}

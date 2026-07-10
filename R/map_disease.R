@@ -16,31 +16,31 @@
 #'     `"ZZZ"`. Scopes the counts.}
 #' }
 #'
-#' @param long A long table from [melt_kcd()].
+#' @param melted A melted table from [melt_kcd()].
 #' @param disease_table A lookup table with columns `kcd`, `kcd_main`, `sub_chk`,
 #'   `lookback_mon`.
-#' @return `long` with `kcd_main`, `sub_chk`, `lookback_mon`, `review`,
+#' @return `melted` with `kcd_main`, `sub_chk`, `lookback_mon`, `review`,
 #'   `in_lookback`, `in_5yr` added.
 #' @export
-map_disease <- function(long, disease_table) {
-  long <- as.data.table(copy(long))
+map_disease <- function(melted, disease_table) {
+  melted <- as.data.table(copy(melted))
   disease_table <- as.data.table(disease_table)
-  long[disease_table, on = .(kcd),
+  melted[disease_table, on = .(kcd),
        `:=`(kcd_main = i.kcd_main, sub_chk = i.sub_chk, lookback_mon = i.lookback_mon)]
-  unmapped <- long[is.na(kcd_main), which = TRUE]
+  unmapped <- melted[is.na(kcd_main), which = TRUE]
   if (length(unmapped)) {
-    fallback <- disease_table[.(substr(long$kcd[unmapped], 1L, 3L)), on = .(kcd),
+    fallback <- disease_table[.(substr(melted$kcd[unmapped], 1L, 3L)), on = .(kcd),
                              .(kcd_main, sub_chk, lookback_mon), mult = "first"]   # one row per key
-    long[unmapped, `:=`(kcd_main = fallback$kcd_main, sub_chk = fallback$sub_chk,
+    melted[unmapped, `:=`(kcd_main = fallback$kcd_main, sub_chk = fallback$sub_chk,
                         lookback_mon = fallback$lookback_mon)]
   }
-  long[is.na(kcd_main), `:=`(kcd_main = "ZZZ", sub_chk = 1L)]   # lookback_mon stays NA for ZZZ
-  long[, review := as.integer(sub_kcd == 0L | sub_chk == 1L)]
-  long[, tdate := pmax(acc_date, sdate, edate, na.rm = TRUE)]   # most recent treatment date
-  long[, in_lookback := as.integer(tdate >= .minus_months(inq_date, lookback_mon))]
-  long[, in_5yr      := as.integer(tdate >= .minus_months(inq_date, 60L))]
-  long[, tdate := NULL]
-  long[]
+  melted[is.na(kcd_main), `:=`(kcd_main = "ZZZ", sub_chk = 1L)]   # lookback_mon stays NA for ZZZ
+  melted[, review := as.integer(sub_kcd == 0L | sub_chk == 1L)]
+  melted[, tdate := pmax(acc_date, sdate, edate, na.rm = TRUE)]   # most recent treatment date
+  melted[, in_lookback := as.integer(tdate >= .minus_months(inq_date, lookback_mon))]
+  melted[, in_5yr      := as.integer(tdate >= .minus_months(inq_date, 60L))]
+  melted[, tdate := NULL]
+  melted[]
 }
 
 # `date` minus `n` months, clamped to the target month's last day so that, e.g.,

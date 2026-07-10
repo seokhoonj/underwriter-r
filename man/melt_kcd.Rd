@@ -4,10 +4,10 @@
 \alias{melt_kcd}
 \title{Reshape a wide clean master to one row per diagnosis code}
 \usage{
-melt_kcd(clean, kcd_cols = paste0("kcd", 0:4))
+melt_kcd(cleaned, kcd_cols = paste0("kcd", 0:4))
 }
 \arguments{
-\item{clean}{A cleansed wide master from \code{\link[=clean_icis]{clean_icis()}}.}
+\item{cleaned}{A cleansed wide master from \code{\link[=clean_icis]{clean_icis()}}.}
 
 \item{kcd_cols}{Character vector of diagnosis-code column names
 (default \code{kcd0..kcd4}).}

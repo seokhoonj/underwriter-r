@@ -14,12 +14,12 @@
 #' dedup-union of hospital calendar days ([instead::count_stay()]); `sur_cnt` and
 #' `out_cnt` count distinct accident dates.
 #'
-#' @param disease_long A long, mapped table from [map_disease()].
+#' @param mapped A long, mapped table from [map_disease()].
 #' @return A `data.table`, one row per `(id, kcd_main)`, with `age`, `hos_day`,
 #'   `sur_cnt`, `out_cnt`, `hos_elp_day`, `sur_elp_day`, `out_elp_day`, `elp_day`.
 #' @export
-aggregate_disease <- function(disease_long) {
-  reviewed <- as.data.table(disease_long)[review == 1L]
+aggregate_disease <- function(mapped) {
+  reviewed <- as.data.table(mapped)[review == 1L]
   # elapsed days since the most recent treatment. clamp at 0: a treatment dated
   # after the inquiry (edate pushed past inquiry by a large hos_day = still
   # hospitalized) means "current", i.e. 0 days elapsed -- never negative.

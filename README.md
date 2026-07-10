@@ -24,11 +24,13 @@ remotes::install_github("seokhoonj/underwriter-r")
 ```r
 library(underwriter)
 
-cleaned  <- filter_latest_inquiry(clean_icis(raw))         # cleanse, keep latest inquiry
-mapped   <- map_disease(melt_kcd(cleaned), disease)        # code -> representative disease
-matched  <- match_rule(aggregate_disease(mapped), ruleset) # band-match the rule set
-applied  <- matched$applied
-combined <- combine_decision(applied, decision_table, exclusion_table, reduction_table, loading_table)
+cleaned    <- filter_latest_inquiry(clean_icis(raw))  # cleanse, keep latest inquiry
+melted     <- melt_kcd(cleaned)                       # one row per diagnosis code
+mapped     <- map_disease(melted, disease)            # code -> representative disease
+aggregated <- aggregate_disease(mapped)               # aggregate per-insured inputs
+matched    <- match_rule(aggregated, ruleset)         # band-match the rule set
+applied    <- matched$applied
+combined   <- combine_decision(applied, decision_table, exclusion_table, reduction_table, loading_table)
 ```
 
 `combined` is one row per insured, one column per coverage, holding the final
