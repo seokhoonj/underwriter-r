@@ -34,7 +34,10 @@ combined   <- combine_decision(applied, decision_table, exclusion_table, reducti
 ```
 
 `combined` is one row per insured, one column per coverage, holding the final
-decision code; the config tables ride along as attributes.
+decision code; the config tables ride along as attributes. Every insured in the
+claim feed gets a row: one with nothing to underwrite -- no diagnosis code, or
+every diagnosis aged out of its lookback window -- carries the reserved `AAA`
+code, and the rule set decides them like any other.
 
 ## Summaries
 
@@ -42,13 +45,14 @@ decision code; the config tables ride along as attributes.
 tab <- tabulate_decision(combined)    # decision distribution per coverage
 plot(tab)                             # stacked bar of the composition
 diagnose_icis(raw)                    # data-quality report
+diagnose_icis(mapped)                 # ... plus which diagnoses the lookback windows admit
 trace_decision(applied, combined, id) # audit one insured's decision
 ```
 
 ## Relaxation analysis
 
-Which rules to relax to lift the automation rate (share of auto-decided,
-non-manual-review cells) -- all per coverage:
+Which rules to relax to lift the automation rate (share of auto-decided cells,
+i.e. those not referred to the underwriter) -- all per coverage:
 
 ```r
 list_rule_impact(applied, combined)                         # each rule's marginal impact
