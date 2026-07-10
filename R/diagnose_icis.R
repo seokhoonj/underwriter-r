@@ -22,14 +22,20 @@
 #'     how often each anchor (sdate-forward vs edate-backward) produces an
 #'     impossible date, by span direction.}
 #'   \item{`gender_dist`, `age_stat`, `missing_required`}{value profile.}
-#'   \item{`no_diagnosis`}{rows with every `kcd` empty (which `clean_icis()`
-#'     drops) -- each still a real claim -- split by treatment: inpatient/surgery
-#'     (`hos_day`/`sur_cnt`/`hos_cnt` > 0), outpatient (a visit date only), or
-#'     truly empty (no treatment and no date). Plus the count of insured with no
-#'     coded row at all.}
+#'   \item{`no_diagnosis`}{rows with every `kcd` empty -- each still a real claim
+#'     -- split by treatment: inpatient/surgery (`hos_day`/`sur_cnt`/`hos_cnt` >
+#'     0), outpatient (a visit date only), or truly empty (no treatment and no
+#'     date). Plus the count of insured with no coded row at all. [clean_icis()]
+#'     keeps these rows on the no-diagnosis code, so none is lost.}
+#'   \item{`scope`}{only on a table from [map_disease()], which carries the
+#'     lookback flags: diagnoses no window covers, and the insured left with
+#'     nothing in scope to underwrite, split into those who never had a coded row
+#'     and those whose every diagnosis aged out. A claim-level feed cannot show
+#'     this -- the windows live in the disease table.}
 #' }
 #'
-#' @param dt An ICIS claim table (`data.table` or coercible).
+#' @param dt An ICIS claim table (`data.table` or coercible), raw, cleansed, or
+#'   mapped by [map_disease()].
 #' @param verbose If `TRUE` (default) print a report; the list is always returned
 #'   invisibly.
 #' @return Invisibly, a named list with `n_row`, `n_id`, and the sections above.
@@ -157,11 +163,13 @@ diagnose_icis <- function(dt, verbose = TRUE) {
   missing_required <- vapply(dt[, .SD, .SDcols = required],
                              function(v) sum(is.na(v) | (is.character(v) & !nzchar(trimws(v)))), numeric(1))
 
-  # --- no-diagnosis rows (every kcd empty; clean_icis drops these) ----------
+  # --- no-diagnosis rows (every kcd empty) ---------------------------------
   # every such row is still a real claim, split by the treatment it carries:
   # inpatient/surgery (hos_day/sur_cnt/hos_cnt > 0), outpatient (no such value but
-  # a visit date), or truly empty (no treatment and no date). Only the last is
-  # safe to auto-pass; the first two are real claims missing a diagnosis.
+  # a visit date), or truly empty (no treatment and no date). clean_icis() keeps
+  # them on the no-diagnosis code and the rule set decides them; this split is
+  # here so the split can be watched, since an inpatient claim with no diagnosis
+  # is a different thing from an empty row.
   no_diagnosis <- NULL
   kcd_cols <- intersect(paste0("kcd", 0:4), names(dt))
   if (length(kcd_cols)) {
@@ -179,6 +187,30 @@ diagnose_icis <- function(dt, verbose = TRUE) {
     )
   }
 
+  # --- scope (only on a mapped table, which carries the lookback flags) ------
+  # the windows come from the disease table, so a claim-level feed cannot show
+  # which diagnoses aged out of them. An insured every window excludes has
+  # nothing to underwrite and lands on the no-diagnosis code -- a population no
+  # other section can see.
+  scope <- NULL
+  if (all(c("kcd_main", "review", "in_lookback", "in_5yr") %in% names(dt))) {
+    coded    <- dt$kcd_main != .KCD_NO_DIAGNOSIS
+    reviewed <- dt$review == 1L
+    windowed <- dt$in_lookback == 1L | (dt$kcd_main == .KCD_UNMAPPED & dt$in_5yr == 1L)
+    windowed[is.na(windowed)] <- FALSE
+    underwritable <- reviewed & coded & windowed
+
+    no_scope    <- setdiff(id, id[underwritable])   # nothing left to underwrite
+    never_coded <- setdiff(id, id[coded])           # no diagnosis was ever recorded
+    scope <- list(
+      not_reviewed      = .count_mask(!reviewed),
+      out_of_window     = .count_mask(reviewed & coded & !windowed),
+      no_scope_ids      = length(no_scope),
+      never_coded_ids   = length(never_coded),
+      aged_out_ids      = length(setdiff(no_scope, never_coded))
+    )
+  }
+
   out <- list(
     n_row            = n_row,
     n_id             = n_id,
@@ -190,7 +222,8 @@ diagnose_icis <- function(dt, verbose = TRUE) {
     gender_dist      = gender_dist,
     age_stat         = age_stat,
     missing_required = missing_required,
-    no_diagnosis     = no_diagnosis
+    no_diagnosis     = no_diagnosis,
+    scope            = scope
   )
 
   if (verbose) .print_diagnose(out)
@@ -272,12 +305,22 @@ diagnose_icis <- function(dt, verbose = TRUE) {
 
   if (!is.null(out$no_diagnosis)) {
     nd <- out$no_diagnosis
-    .header("no diagnosis (all kcd empty; clean_icis drops these rows)")
+    .header("no diagnosis (all kcd empty; kept on the no-diagnosis code)")
     .counts("all kcd empty", nd$all_empty)
     .counts("  inpatient/surgery", nd$inpatient)
     .counts("  outpatient (visit only)", nd$outpatient)
     .counts("  empty (no treatment/date)", nd$empty)
-    .icount("ids with no coded row", nd$all_empty_ids, "-> dropped entirely")
+    .icount("ids with no coded row", nd$all_empty_ids)
+  }
+
+  if (!is.null(out$scope)) {
+    sc <- out$scope
+    .header("scope (which diagnoses the lookback windows admit)")
+    .counts("not reviewed", sc$not_reviewed)
+    .counts("reviewed but out of window", sc$out_of_window)
+    .icount("ids with nothing in scope", sc$no_scope_ids, "-> no-diagnosis code")
+    .icount("  no diagnosis ever recorded", sc$never_coded_ids)
+    .icount("  every diagnosis aged out", sc$aged_out_ids)
   }
 }
 

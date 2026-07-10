@@ -7,7 +7,8 @@
 diagnose_icis(dt, verbose = TRUE)
 }
 \arguments{
-\item{dt}{An ICIS claim table (\code{data.table} or coercible).}
+\item{dt}{An ICIS claim table (\code{data.table} or coercible), raw, cleansed, or
+mapped by \code{\link[=map_disease]{map_disease()}}.}
 
 \item{verbose}{If \code{TRUE} (default) print a report; the list is always returned
 invisibly.}
@@ -39,10 +40,15 @@ base).}
 how often each anchor (sdate-forward vs edate-backward) produces an
 impossible date, by span direction.}
 \item{\code{gender_dist}, \code{age_stat}, \code{missing_required}}{value profile.}
-\item{\code{no_diagnosis}}{rows with every \code{kcd} empty (which \code{clean_icis()}
-drops) -- each still a real claim -- split by treatment: inpatient/surgery
-(\code{hos_day}/\code{sur_cnt}/\code{hos_cnt} > 0), outpatient (a visit date only), or
-truly empty (no treatment and no date). Plus the count of insured with no
-coded row at all.}
+\item{\code{no_diagnosis}}{rows with every \code{kcd} empty -- each still a real claim
+-- split by treatment: inpatient/surgery (\code{hos_day}/\code{sur_cnt}/\code{hos_cnt} >
+0), outpatient (a visit date only), or truly empty (no treatment and no
+date). Plus the count of insured with no coded row at all. \code{\link[=clean_icis]{clean_icis()}}
+keeps these rows on the no-diagnosis code, so none is lost.}
+\item{\code{scope}}{only on a table from \code{\link[=map_disease]{map_disease()}}, which carries the
+lookback flags: diagnoses no window covers, and the insured left with
+nothing in scope to underwrite, split into those who never had a coded row
+and those whose every diagnosis aged out. A claim-level feed cannot show
+this -- the windows live in the disease table.}
 }
 }
