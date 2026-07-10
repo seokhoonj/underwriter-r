@@ -1,7 +1,7 @@
 #' Decompose the joint rule impact into marginal, joint, and synergy per coverage
 #'
 #' Relaxing a set of rules at once lifts the automation rate by *more* than the
-#' sum of relaxing each alone: a cell held on manual review by two of them flips
+#' sum of relaxing each alone: a cell referred by two of them flips
 #' only when both are relaxed, so it is credited to neither marginal. This splits
 #' the joint rule impact, per coverage, into the sum of the marginals
 #' (`individual`), the actual joint lift (`joint`), and the `synergy`
@@ -17,7 +17,7 @@
 #'   `c("hos", "sur")`); default `NULL` decomposes every coverage.
 #' @return A `data.table` with one row per `(coverage, component)` -- `coverage`,
 #'   `component` (`individual`/`joint`/`synergy`), `n_flipped` (insured x
-#'   coverage cells moved off manual review), and `auto_lift` (`n_flipped` over
+#'   coverage cells no longer referred), and `auto_lift` (`n_flipped` over
 #'   that coverage's cells).
 #' @seealso [relax_rule()] for one rule's per-coverage detail,
 #'   [list_rule_impact()] for every rule's marginal impact.

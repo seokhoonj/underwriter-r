@@ -6,7 +6,7 @@
 #' `out_day` is left unconstrained in the rule set, so `out_cnt` is not matched
 #' on. Only no-declaration rules (`decl_yn == 0`) are used -- declaration-
 #' dependent rows hinge on facts the claim feed does not carry. A disease with no
-#' matching rule is kept with `matched == 0` so it can route to manual review.
+#' matching rule is kept with `matched == 0` so it can be referred to the underwriter.
 #'
 #' Near-all multi-matches are identical duplicates; the lowest-`ord` match is
 #' kept and the few genuine conflicts are flagged in `conflict`. The rule set is

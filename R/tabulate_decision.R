@@ -10,7 +10,7 @@
 #'
 #' @param combined A wide combined-decision table from [combine_decision()],
 #'   carrying the `decision_table` attribute it attaches; that table's `auto`
-#'   column flags each code as auto (`1`) or manual review (`0`).
+#'   column flags each code as auto (`1`) or referred to the underwriter (`0`).
 #' @param id_col Name of the id column to exclude from the coverages
 #'   (default `"id"`).
 #' @return A long `data.table` of class `tabulated_decision` (plottable with
@@ -18,7 +18,7 @@
 #'   (the decision's distinct class letters, e.g. `"R03(34),R04(34)"` -> `"R"`,
 #'   `"R(99),L(24),E(25)"` -> `"E,L,R"`), `auto` (a factor with levels `0`/`1`:
 #'   `1` only when every code in the decision is flagged auto, `0` when any code
-#'   needs manual review -- the auto/manual line is controlled by editing
+#'   needs the underwriter -- the auto/referred line is controlled by editing
 #'   `decision_table`'s `auto` column),
 #'   `n` (insured count), and `prop` (`n` over the coverage's total, so each
 #'   coverage's proportions sum to 1).
@@ -37,7 +37,7 @@ tabulate_decision <- function(combined, id_col = "id") {
   out <- long[, .(n = .N), by = .(coverage, decision)]
   out[, category := .decision_category(decision)]
   # per-code auto flag from decision_table; a decision counts as auto only when
-  # every code in it is auto (0 if any component needs manual review).
+  # every code in it is auto (0 if any component needs the underwriter).
   # coerce the auto flag to 0/1 whatever its storage: factor "0"/"1" via character,
   # logical TRUE/FALSE via as.integer directly, numeric/integer/character as-is.
   auto_raw <- decision_table$auto

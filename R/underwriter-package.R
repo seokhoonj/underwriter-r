@@ -16,7 +16,7 @@ NULL
 #
 # Neither is wired to a decision here. Both are ordinary `kcd_main` values that
 # the rule set decides, so an insured is never dropped from the feed to be
-# re-added later, and a missing rule row routes them to manual review rather
+# re-added later, and a missing rule row refers them to the underwriter rather
 # than passing them silently.
 .KCD_NO_DIAGNOSIS <- "AAA"
 .KCD_UNMAPPED     <- "ZZZ"

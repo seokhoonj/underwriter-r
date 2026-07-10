@@ -1,17 +1,17 @@
 #' Relax a rule (or set of rules) and measure the per-coverage lift
 #'
 #' What-if experiment: if the rule(s) for the given representative disease(s)
-#' (`kcd_main`) were relaxed -- their manual-review decisions turned into the
+#' (`kcd_main`) were relaxed -- their underwriter referrals turned into the
 #' standard (auto) code, keeping every exclusion / loading / reduction / decline
 #' -- how much would each coverage's auto-decided share rise? The target's
-#' manual-review cells are set to standard, the decisions are re-combined with
+#' referred cells are set to standard, the decisions are re-combined with
 #' [combine_decision()], and the auto share is re-tabulated against the baseline.
 #'
-#' Because a coverage routes to manual review when *any* of an insured's diseases
-#' does, the lift is computed by re-running the full combine -- an insured still
-#' held for review by another disease does not flip. Only manual-review decisions
+#' Because a coverage is referred when *any* of an insured's diseases refers it,
+#' the lift is computed by re-running the full combine -- an insured still referred
+#' by another disease does not flip. Only referrals
 #' are relaxed (never declines or restrictions), so the auto share can only rise;
-#' fully waiving a decline could unmask a manual review it had outranked and
+#' fully waiving a decline could unmask a referral it had outranked and
 #' *lower* the auto share, which is why that is deliberately not done.
 #'
 #' @param applied Per-disease decisions from [match_rule()] (`$applied`).
@@ -29,7 +29,7 @@
 #' @return A `relaxed_rule` object (a `data.table`), one row per coverage sorted
 #'   by `lift` descending, with `auto_base` (baseline auto share), `auto_relaxed`
 #'   (after relaxing), `lift` (the increase), and `n_flipped` (insured moved from
-#'   manual review to auto). Relaxing several codes at once gives the *joint*
+#'   referral to auto). Relaxing several codes at once gives the *joint*
 #'   effect (synergy included); compare `sum(n_flipped)` to the sum of the codes'
 #'   individual marginals from [list_rule_impact()] to read the synergy.
 #' @seealso [list_rule_impact()] for every rule's marginal impact,
@@ -46,10 +46,10 @@ relax_rule <- function(applied, combined, kcd_main, coverage = NULL) {
   if (is.null(decision_table) || is.null(decision_cols))
     stop("`combined` must come from combine_decision() and `applied` from match_rule().")
 
-  role          <- decision_table$role
-  standard      <- decision_table$code[!is.na(role) & role == "standard"][1L]
-  manual_review <- decision_table$code[!is.na(role) & role == "manual_review"][1L]
-  target        <- paste(kcd_main, collapse = "|")   # a vector of codes -> OR'd
+  role        <- decision_table$role
+  standard    <- decision_table$code[!is.na(role) & role == "standard"][1L]
+  underwriter <- decision_table$code[!is.na(role) & role == "underwriter"][1L]
+  target      <- paste(kcd_main, collapse = "|")   # a vector of codes -> OR'd
 
   base <- tabulate_decision(combined)[, .(auto_base = sum(prop[auto == "1"]),
                                           n_total   = sum(n)), by = coverage]
@@ -61,8 +61,8 @@ relax_rule <- function(applied, combined, kcd_main, coverage = NULL) {
   relaxed <- copy(as.data.table(applied))
   tgt <- grepl(target, relaxed$kcd_main)
   relaxed[tgt & matched == 0L, (decision_cols) := standard]
-  for (col in decision_cols)   # relax only the manual-review cells, keep restrictions
-    relaxed[tgt & matched == 1L & get(col) == manual_review, (col) := standard]
+  for (col in decision_cols)   # relax only the referred cells, keep restrictions
+    relaxed[tgt & matched == 1L & get(col) == underwriter, (col) := standard]
   relaxed[tgt, matched := 1L]
 
   new_combined <- combine_decision(relaxed, decision_table, exclusion_table,

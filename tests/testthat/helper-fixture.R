@@ -5,7 +5,7 @@
 # `applied` layout (id x kcd_main, one row each), decision on cov1/cov2:
 #   A: M543 (cov1=U, cov2=S), M542 (cov1=S, cov2=U)   -> cov1=U (M543 sole), cov2=U (M542 sole)
 #   B: M543 (cov1=U, cov2=D)                          -> cov1=U (M543 sole), cov2=D
-#   C: N50  unmatched -> manual review everywhere      -> cov1=U (N50 sole),  cov2=U (N50 sole)
+#   C: N50  unmatched -> underwriter everywhere      -> cov1=U (N50 sole),  cov2=U (N50 sole)
 #   D: M543 (cov1=U), M542 (cov1=U)  co-hold cov1      -> cov1=U (two causes -> synergy), cov2=S
 
 fixture <- function() {
@@ -15,7 +15,7 @@ fixture <- function() {
     code     = c("S", "U", "D", "R", "E", "L"),
     priority = c(5L, 2L, 1L, 3L, 4L, 4L),
     combiner = c("priority", "priority", "priority", "exclusion", "loading", "reduction"),
-    role     = c("standard", "manual_review", "decline", NA, NA, NA),
+    role     = c("standard", "underwriter", "decline", NA, NA, NA),
     auto     = c(1L, 0L, 1L, 1L, 1L, 1L)
   )
   exclusion_table <- data.table::data.table(mark = c("5i", "3", "99"))

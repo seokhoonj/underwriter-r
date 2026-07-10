@@ -18,7 +18,7 @@ Collapses the long, mapped table to one row per \verb{(id, kcd_main)} with the
 inputs a rule set bands on. Reviewed rows only (\code{review == 1}). Counts use a
 fixed 5-year window; elapsed days use each disease's lookback window (with the
 5-year window as the fallback for unmapped \code{"ZZZ"} codes, which are kept so
-they can route to manual review).
+they can be referred to the underwriter).
 }
 \details{
 Elapsed days are computed per treatment type -- \code{hos_elp_day} (hospitalization),

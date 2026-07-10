@@ -19,8 +19,8 @@
 #' @param decision_table Decision-code table with columns `code`, `priority`
 #'   (lower = worse), `combiner` (`priority`/`exclusion`/`loading`/`reduction`),
 #'   `role` (marks the engine-emitted codes: `standard`, `decline`,
-#'   `manual_review` -- a `manual_review` row is required, since unmatched
-#'   diseases route there), and `auto` (`1`/`0`, read by [tabulate_decision()]
+#'   `underwriter` -- an `underwriter` row is required, since unmatched
+#'   diseases are referred there), and `auto` (`1`/`0`, read by [tabulate_decision()]
 #'   and `plot()` to flag which codes count as automatic).
 #' @param exclusion_table,reduction_table Period-code tables listing the valid
 #'   `mark`s (`"5i"` = 5 years minus elapsed, `"3"` = 3 years, `"99"` = whole
@@ -41,10 +41,10 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   priority <- setNames(as.integer(decision_table$priority), decision_table$code)
   combiner <- setNames(decision_table$combiner, decision_table$code)
   letter   <- .decision_letters(decision_table, priority)
-  if (is.na(letter$manual_review))
-    stop("`decision_table` needs a row with role == \"manual_review\"; unmatched diseases route there.")
+  if (is.na(letter$underwriter))
+    stop("`decision_table` needs a row with role == \"underwriter\"; unmatched diseases are referred there.")
 
-  long <- .melt_decisions(applied, decision_cols, combiner, letter$manual_review)
+  long <- .melt_decisions(applied, decision_cols, combiner, letter$underwriter)
 
   results <- rbindlist(list(
     .combine_priority( long[method == "priority"] , priority),
@@ -73,19 +73,19 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
     decision_table$code[!is.na(decision_table$role) & decision_table$role == r][1L] else NA_character_
   standard <- by_role("standard"); if (is.na(standard)) standard <- names(which.max(priority))
   decline  <- by_role("decline");  if (is.na(decline))  decline  <- names(which.min(priority))
-  list(exclusion     = by_combine("exclusion"),
-       loading       = by_combine("loading"),
-       reduction     = by_combine("reduction"),
-       standard      = standard,
-       decline       = decline,
-       manual_review = by_role("manual_review"))
+  list(exclusion   = by_combine("exclusion"),
+       loading     = by_combine("loading"),
+       reduction   = by_combine("reduction"),
+       standard    = standard,
+       decline     = decline,
+       underwriter = by_role("underwriter"))
 }
 
 # Melt the per-disease decisions to one row per (id, coverage, disease), tagging
-# each with the combiner its class uses. No-rule diseases route to manual review.
-.melt_decisions <- function(applied, decision_cols, combiner, manual_review) {
+# each with the combiner its class uses. No-rule diseases go to the underwriter.
+.melt_decisions <- function(applied, decision_cols, combiner, underwriter) {
   applied <- as.data.table(copy(applied))
-  applied[matched == 0L, (decision_cols) := manual_review]
+  applied[matched == 0L, (decision_cols) := underwriter]
   long <- melt(applied, id.vars = c("id", "elp_day"), measure.vars = decision_cols,
                variable.name = "coverage", value.name = "code", variable.factor = FALSE)
   long <- long[!is.na(code) & nzchar(code)]

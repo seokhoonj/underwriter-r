@@ -29,8 +29,8 @@ trace_decision <- function(applied, combined, id) {
   if (is.null(decision_table))
     stop("`combined` has no config attributes; produce `combined` with combine_decision().")
 
-  role          <- decision_table$role
-  manual_review <- decision_table$code[!is.na(role) & role == "manual_review"][1L]
+  role        <- decision_table$role
+  underwriter <- decision_table$code[!is.na(role) & role == "underwriter"][1L]
 
   combined_dt <- as.data.table(combined)[id == key]
   if (!nrow(combined_dt)) stop(sprintf("id %s not found in `combined`.", format(key)))
@@ -42,9 +42,9 @@ trace_decision <- function(applied, combined, id) {
     stop(sprintf("id %s is in `combined` but absent from `applied`.", format(key)))
 
   # per-disease tokens that fed each coverage; mirror combine's fill so an
-  # unmatched disease shows as manual review rather than a blank cell
+  # unmatched disease shows as an underwriter referral rather than a blank cell
   filled <- copy(applied_one)
-  filled[matched == 0L, (decision_cols) := manual_review]
+  filled[matched == 0L, (decision_cols) := underwriter]
   inputs <- melt(filled, id.vars = "kcd_main", measure.vars = decision_cols,
                  variable.name = "coverage", value.name = "code", variable.factor = FALSE)
   inputs <- inputs[!is.na(code) & nzchar(code)]

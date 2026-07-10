@@ -4,7 +4,7 @@
 #' inputs a rule set bands on. Reviewed rows only (`review == 1`). Counts use a
 #' fixed 5-year window; elapsed days use each disease's lookback window (with the
 #' 5-year window as the fallback for unmapped `"ZZZ"` codes, which are kept so
-#' they can route to manual review).
+#' they can be referred to the underwriter).
 #'
 #' Elapsed days are computed per treatment type -- `hos_elp_day` (hospitalization),
 #' `sur_elp_day` (surgery), `out_elp_day` (outpatient) -- because products combine

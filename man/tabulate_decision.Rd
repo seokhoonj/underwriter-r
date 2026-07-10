@@ -9,7 +9,7 @@ tabulate_decision(combined, id_col = "id")
 \arguments{
 \item{combined}{A wide combined-decision table from \code{\link[=combine_decision]{combine_decision()}},
 carrying the \code{decision_table} attribute it attaches; that table's \code{auto}
-column flags each code as auto (\code{1}) or manual review (\code{0}).}
+column flags each code as auto (\code{1}) or referred to the underwriter (\code{0}).}
 
 \item{id_col}{Name of the id column to exclude from the coverages
 (default \code{"id"}).}
@@ -20,7 +20,7 @@ A long \code{data.table} of class \code{tabulated_decision} (plottable with
 (the decision's distinct class letters, e.g. \code{"R03(34),R04(34)"} -> \code{"R"},
 \code{"R(99),L(24),E(25)"} -> \code{"E,L,R"}), \code{auto} (a factor with levels \code{0}/\code{1}:
 \code{1} only when every code in the decision is flagged auto, \code{0} when any code
-needs manual review -- the auto/manual line is controlled by editing
+needs the underwriter -- the auto/referred line is controlled by editing
 \code{decision_table}'s \code{auto} column),
 \code{n} (insured count), and \code{prop} (\code{n} over the coverage's total, so each
 coverage's proportions sum to 1).

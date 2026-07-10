@@ -20,8 +20,8 @@ combine_decision(
 \item{decision_table}{Decision-code table with columns \code{code}, \code{priority}
 (lower = worse), \code{combiner} (\code{priority}/\code{exclusion}/\code{loading}/\code{reduction}),
 \code{role} (marks the engine-emitted codes: \code{standard}, \code{decline},
-\code{manual_review} -- a \code{manual_review} row is required, since unmatched
-diseases route there), and \code{auto} (\code{1}/\code{0}, read by \code{\link[=tabulate_decision]{tabulate_decision()}}
+\code{underwriter} -- an \code{underwriter} row is required, since unmatched
+diseases are referred there), and \code{auto} (\code{1}/\code{0}, read by \code{\link[=tabulate_decision]{tabulate_decision()}}
 and \code{plot()} to flag which codes count as automatic).}
 
 \item{exclusion_table, reduction_table}{Period-code tables listing the valid

@@ -4,7 +4,7 @@
 #' (`kcd_main`), the sub-diagnosis review flag (`sub_chk`), and the lookback
 #' window in months (`lookback_mon`): exact match first, then a 3-character
 #' fallback, then `"ZZZ"` for the still-unmapped (kept, never dropped, so they
-#' can route to manual review). Adds:
+#' can be referred to the underwriter). Adds:
 #' \describe{
 #'   \item{`review`}{`1` when the row should be reviewed: the main diagnosis
 #'     always, a sub-diagnosis only when its code is flagged `sub_chk == 1`.}

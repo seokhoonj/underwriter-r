@@ -27,24 +27,24 @@ code is a safe substring pattern.}
 A \code{relaxed_rule} object (a \code{data.table}), one row per coverage sorted
 by \code{lift} descending, with \code{auto_base} (baseline auto share), \code{auto_relaxed}
 (after relaxing), \code{lift} (the increase), and \code{n_flipped} (insured moved from
-manual review to auto). Relaxing several codes at once gives the \emph{joint}
+referral to auto). Relaxing several codes at once gives the \emph{joint}
 effect (synergy included); compare \code{sum(n_flipped)} to the sum of the codes'
 individual marginals from \code{\link[=list_rule_impact]{list_rule_impact()}} to read the synergy.
 }
 \description{
 What-if experiment: if the rule(s) for the given representative disease(s)
-(\code{kcd_main}) were relaxed -- their manual-review decisions turned into the
+(\code{kcd_main}) were relaxed -- their underwriter referrals turned into the
 standard (auto) code, keeping every exclusion / loading / reduction / decline
 -- how much would each coverage's auto-decided share rise? The target's
-manual-review cells are set to standard, the decisions are re-combined with
+referred cells are set to standard, the decisions are re-combined with
 \code{\link[=combine_decision]{combine_decision()}}, and the auto share is re-tabulated against the baseline.
 }
 \details{
-Because a coverage routes to manual review when \emph{any} of an insured's diseases
-does, the lift is computed by re-running the full combine -- an insured still
-held for review by another disease does not flip. Only manual-review decisions
+Because a coverage is referred when \emph{any} of an insured's diseases refers it,
+the lift is computed by re-running the full combine -- an insured still referred
+by another disease does not flip. Only referrals
 are relaxed (never declines or restrictions), so the auto share can only rise;
-fully waiving a decline could unmask a manual review it had outranked and
+fully waiving a decline could unmask a referral it had outranked and
 \emph{lower} the auto share, which is why that is deliberately not done.
 }
 \seealso{

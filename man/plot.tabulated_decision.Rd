@@ -33,12 +33,12 @@ to keep thin slivers from cluttering (default \code{0.03}).}
 }
 \value{
 A \code{ggplot} object. When \code{group = "auto"}, auto-decided (\code{1}) is blue
-and manual review (\code{0}) is red.
+and underwriter-referred (\code{0}) is red.
 }
 \description{
 \code{plot()} method for a \code{\link[=tabulate_decision]{tabulate_decision()}} result (class \code{tabulated_decision}):
 a stacked bar of each coverage's decision composition -- by default the
-auto-decided vs manual-review share -- with each segment's percentage labelled
+auto-decided vs underwriter-referred share -- with each segment's percentage labelled
 at its centre.
 }
 \seealso{

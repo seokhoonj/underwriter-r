@@ -30,7 +30,7 @@ join: \code{kcd_main} equality plus \code{age}, \code{elp_day}, \code{sur_cnt}, 
 \code{out_day} is left unconstrained in the rule set, so \code{out_cnt} is not matched
 on. Only no-declaration rules (\code{decl_yn == 0}) are used -- declaration-
 dependent rows hinge on facts the claim feed does not carry. A disease with no
-matching rule is kept with \code{matched == 0} so it can route to manual review.
+matching rule is kept with \code{matched == 0} so it can be referred to the underwriter.
 }
 \details{
 Near-all multi-matches are identical duplicates; the lowest-\code{ord} match is

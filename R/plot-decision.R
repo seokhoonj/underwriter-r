@@ -2,7 +2,7 @@
 #'
 #' `plot()` method for a [tabulate_decision()] result (class `tabulated_decision`):
 #' a stacked bar of each coverage's decision composition -- by default the
-#' auto-decided vs manual-review share -- with each segment's percentage labelled
+#' auto-decided vs underwriter-referred share -- with each segment's percentage labelled
 #' at its centre.
 #'
 #' @param x A [tabulate_decision()] result (class `tabulated_decision`).
@@ -17,7 +17,7 @@
 #' @param title Plot title (default `"Decision composition per coverage"`).
 #' @param ... Unused.
 #' @return A `ggplot` object. When `group = "auto"`, auto-decided (`1`) is blue
-#'   and manual review (`0`) is red.
+#'   and underwriter-referred (`0`) is red.
 #' @seealso [tabulate_decision()], [combine_decision()].
 #' @method plot tabulated_decision
 #' @export
@@ -56,7 +56,7 @@ plot.tabulated_decision <- function(x, ..., group = c("auto", "category"),
       panel.grid.minor = ggplot2::element_blank(),
       panel.border     = ggplot2::element_rect(colour = "black", fill = NA))
 
-  # auto-decided (1) blue, manual review (0) red
+  # auto-decided (1) blue, underwriter-referred (0) red
   if (group == "auto")
     p <- p + ggplot2::scale_fill_manual(values = c("0" = "#FB8072", "1" = "#80B1D3"))
   p

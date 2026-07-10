@@ -21,12 +21,12 @@ for regex families relax them with \code{\link[=relax_rule]{relax_rule()}} direc
 \value{
 A \code{data.table} with one row per \verb{(coverage, component)} -- \code{coverage},
 \code{component} (\code{individual}/\code{joint}/\code{synergy}), \code{n_flipped} (insured x
-coverage cells moved off manual review), and \code{auto_lift} (\code{n_flipped} over
+coverage cells no longer referred), and \code{auto_lift} (\code{n_flipped} over
 that coverage's cells).
 }
 \description{
 Relaxing a set of rules at once lifts the automation rate by \emph{more} than the
-sum of relaxing each alone: a cell held on manual review by two of them flips
+sum of relaxing each alone: a cell referred by two of them flips
 only when both are relaxed, so it is credited to neither marginal. This splits
 the joint rule impact, per coverage, into the sum of the marginals
 (\code{individual}), the actual joint lift (\code{joint}), and the \code{synergy}

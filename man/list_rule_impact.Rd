@@ -17,13 +17,13 @@ config-table attributes.}
 }
 \value{
 A \code{rule_impact_list} (a \code{data.table}) with \code{coverage}, \code{kcd_main},
-\code{n_id} (insured moved off review), \code{n_flipped} (cells flipped), and
+\code{n_id} (insured no longer referred), \code{n_flipped} (cells flipped), and
 \code{auto_lift} (\code{n_flipped} over that coverage's cells), sorted within each
 coverage by descending \code{n_flipped}.
 }
 \description{
-For every representative disease (\code{kcd_main}) whose rule drives a coverage to
-manual review, the \emph{marginal} lift of relaxing that rule on its own: the
+For every representative disease (\code{kcd_main}) whose rule refers a coverage to
+the underwriter, the \emph{marginal} lift of relaxing that rule on its own: the
 insured and the cells that would flip to auto, per coverage. Each rule is
 scored \strong{independently} (no synergy across rules) and ranked within each
 coverage, so the result is a per-coverage list of marginal rule impacts -- the
@@ -32,8 +32,8 @@ several rules together (synergy included) use \code{\link[=relax_rule]{relax_rul
 into marginals vs synergy use \code{\link[=decompose_rule_impact]{decompose_rule_impact()}}.
 }
 \details{
-A manual-review cell counts for a rule only when that rule is its \emph{sole}
-manual-review source (another disease still holding it keeps it on review), so
+A referred cell counts for a rule only when that rule is its \emph{sole} source of
+the referral (another disease still holding it keeps it referred), so
 the marginal is exact for relaxing one rule at a time without re-running
 \code{\link[=combine_decision]{combine_decision()}} per candidate. Cells already auto-decided -- including
 ones a decline outranks -- are not counted, so the auto share can only rise.

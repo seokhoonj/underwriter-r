@@ -8,18 +8,18 @@ test_that("combine_decision produces the expected per-insured decisions", {
   expect_equal(g("A", "cov1"), "U")   # M543 U wins over M542 S (worst code)
   expect_equal(g("A", "cov2"), "U")   # M542 U wins over M543 S
   expect_equal(g("B", "cov2"), "D")   # decline wins (lowest priority)
-  expect_equal(g("C", "cov1"), "U")   # unmatched -> manual review
+  expect_equal(g("C", "cov1"), "U")   # unmatched -> underwriter
   expect_equal(g("D", "cov1"), "U")   # co-held U
   expect_equal(g("D", "cov2"), "S")   # both standard
 })
 
-test_that("combine_decision errors without a manual_review role", {
+test_that("combine_decision errors without an underwriter role", {
   f <- fixture()
   dec <- data.table::copy(f$decision_table)
-  dec[role == "manual_review", role := NA]
+  dec[role == "underwriter", role := NA]
   expect_error(
     combine_decision(f$applied, dec, f$exclusion_table, f$reduction_table, f$loading_table),
-    "manual_review"
+    "underwriter"
   )
 })
 
@@ -28,7 +28,7 @@ test_that("combine_decision decides every id in applied", {
   expect_setequal(f$combined$id, unique(f$applied$id))
 })
 
-test_that("tabulate_decision flags auto vs manual review and sums to 1 per coverage", {
+test_that("tabulate_decision flags auto vs referred and sums to 1 per coverage", {
   f <- fixture()
   tab <- tabulate_decision(f$combined)
   expect_true(all(c("coverage", "decision", "category", "auto", "n", "prop") %in% names(tab)))
