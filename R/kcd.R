@@ -14,11 +14,11 @@
 melt_kcd <- function(cleaned, kcd_cols = paste0("kcd", 0:4)) {
   cleaned <- as.data.table(cleaned)
   carry <- setdiff(names(cleaned), kcd_cols)
-  long <- melt(cleaned, id.vars = carry, measure.vars = kcd_cols,
-               variable.name = "ord", value.name = "kcd", na.rm = TRUE)
-  long[, sub_kcd := as.integer(as.integer(sub("kcd", "", ord)) > 0L)]   # 0 = main
-  long[, ord := NULL]
-  long[]
+  melted <- melt(cleaned, id.vars = carry, measure.vars = kcd_cols,
+                 variable.name = "ord", value.name = "kcd", na.rm = TRUE)
+  melted[, sub_kcd := as.integer(as.integer(sub("kcd", "", ord)) > 0L)]   # 0 = main
+  melted[, ord := NULL]
+  melted[]
 }
 
 #' Normalize a diagnosis-code cell to the flat KCD form

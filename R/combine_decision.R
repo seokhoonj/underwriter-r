@@ -12,14 +12,13 @@
 #' sums the indices, `reduction` keeps the longest period, and `priority` -- for a
 #' class with no merge rule of its own -- keeps the worst code.
 #'
-#' Two of those merges leave behind an accumulated amount -- the exclusion's
-#' distinct site count, the loading's summed index -- and `band_table` says what
-#' each amount decides. Both are read the same way: the band the amount lands in
-#' either keeps the class's own output, when its `decision` is the bare class
-#' letter, or replaces it with another code. So `R` at `at_least = 1` keeps the
-#' exclusion an insured earned, and `D` at `at_least = 5` declines a coverage once
-#' the exclusion spans five sites; `E` at `at_least = 0` writes the loading
-#' (`E(75)`), and `U` at `at_least = 50` refers it to the underwriter instead.
+#' Two of those merges leave behind an amount the rule set then bands. The
+#' exclusion counts distinct sites and declines a coverage once they exceed the
+#' `max_sites` its `decision_table` row carries. The loading sums its indices and
+#' looks the sum up in `loading_table`: the band it lands in either keeps the
+#' loading the class wrote for itself, when its `decision` is the bare loading
+#' letter, or substitutes another code -- `E` at `at_least = 0` writes `E(75)`,
+#' while `U` at `at_least = 50` refers that sum to the underwriter instead.
 #'
 #' `role` then says how the classes meet each other. The `decline` and
 #' `underwriter` codes are terminal: either one stands alone on a cell, suppressing
@@ -69,25 +68,25 @@
 #'   (`priority`/`exclusion`/`loading`/`reduction`, the within-class merge rule),
 #'   `role` (marks the engine-emitted codes: `standard`, `decline`,
 #'   `underwriter` -- an `underwriter` row is required, since unmatched
-#'   diseases are referred there), and `auto` (`1`/`0`, read by [tabulate_decision()]
-#'   and `plot()` to flag which codes count as automatic). Its row order is the
-#'   order the composed codes are written in.
+#'   diseases are referred there), `auto` (`1`/`0`, read by [tabulate_decision()]
+#'   and `plot()` to flag which codes count as automatic), and `max_sites` (the
+#'   distinct exclusion sites a coverage tolerates before it declines; required on
+#'   the exclusion code's row, blank on every other, as `role` is). Its row order is
+#'   the order the composed codes are written in.
 #' @param exclusion_table,reduction_table Period-code tables listing the valid
 #'   `mark`s (`"5i"` = 5 years minus elapsed, `"3"` = 3 years, `"99"` = whole
 #'   period); the period logic is parsed from the mark itself.
-#' @param band_table Columns `class`, `at_least`, `decision`. One staircase of
-#'   bands per accumulating class: within a `class`, a row claims every amount from
-#'   its `at_least` up to the next row's, and the last row runs to infinity. Every
-#'   class the engine accumulates for -- the exclusion and loading codes -- needs at
-#'   least one band, and its first `at_least` must be low enough to catch the
-#'   smallest amount that class can produce (`0` for a loading, `1` for an
-#'   exclusion, which always has a site). A `decision` holding the bare class letter
-#'   keeps that class's own output; any other value substitutes for it.
+#' @param loading_table Columns `at_least`, `decision`. A staircase over the summed
+#'   loading index: a row claims every sum from its `at_least` (inclusive) up to the
+#'   next row's, the last row runs to infinity, and the first must start at `0`. A
+#'   `decision` holding the bare loading letter keeps the loading itself, so the band
+#'   reads `E(75)`; any other value substitutes for it, so `"U"` or `"D"` escalates
+#'   the coverage rather than loading it.
 #' @param decision_cols Coverage decision columns (default: the `"decision_cols"`
 #'   attribute set by [match_rule()]).
 #' @return A wide `data.table`, one row per `id`, one column per coverage. The
 #'   four supplied tables ride along as attributes (`decision_table`,
-#'   `exclusion_table`, `reduction_table`, `band_table`), together with
+#'   `exclusion_table`, `reduction_table`, `loading_table`), together with
 #'   `decision_cols` (the rule-set coverage order, which the `id ~ coverage`
 #'   reshape would otherwise sort away), so downstream summaries such as
 #'   [tabulate_decision()] and `plot()`, and the functions that recombine
@@ -96,7 +95,7 @@
 #'   `code`, `reason`, the `rule_no` and `kcd_main` that wrote it, and the `n_id` /
 #'   `n_cell` it reached -- or `NULL` when every code read cleanly.
 #' @export
-combine_decision <- function(applied, decision_table, exclusion_table, reduction_table, band_table,
+combine_decision <- function(applied, decision_table, exclusion_table, reduction_table, loading_table,
                              decision_cols = attr(applied, "decision_cols")) {
   .check_decision_table(decision_table)
   priority <- setNames(as.integer(decision_table$priority), decision_table$code)
@@ -104,36 +103,38 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   letter   <- .decision_letters(decision_table, priority)
   if (is.na(letter$underwriter))
     stop("`decision_table` needs a row with role == \"underwriter\"; unmatched diseases are referred there.")
-  exclusion_band <- .band_for(band_table, letter$exclusion)
-  loading_band   <- .band_for(band_table, letter$loading)
+  max_sites    <- .max_sites(decision_table, letter$exclusion)
+  loading_band <- .check_loading_table(loading_table, letter$loading, decision_table,
+                                       combiner, exclusion_table, reduction_table)
 
-  long <- .melt_decisions(applied, decision_cols, combiner, letter$underwriter)
+  melted <- .melt_decisions(applied, decision_cols, combiner, letter$underwriter)
 
   # judge the whole code vocabulary once, then keep the unreadable ones away from the
   # combiners: their cells are referred, and the underwriter code being terminal
   # suppresses whatever else those cells carried.
-  unreadable <- .unresolvable(unique(long$code), decision_table, combiner,
+  unreadable <- .unresolvable(unique(melted$code), decision_table, combiner,
                               exclusion_table, reduction_table)
-  long[, reason := NA_character_]
-  if (nrow(unreadable)) long[unreadable, on = .(code), reason := i.reason]
-  referred <- long[!is.na(reason)]
-  readable <- long[ is.na(reason)]
+  melted[, reason := NA_character_]
+  if (nrow(unreadable)) melted[unreadable, on = .(code), reason := i.reason]
+  referred <- melted[!is.na(reason)]
+  readable <- melted[ is.na(reason)]
 
   results <- rbindlist(list(
     unique(referred[, .(id, coverage)])[, dec := letter$underwriter],
     .combine_priority( readable[method == "priority"] , priority),
-    .combine_exclusion(readable[method == "exclusion"], exclusion_table, exclusion_band, letter$exclusion),
+    .combine_exclusion(readable[method == "exclusion"], exclusion_table, max_sites,
+                       letter$exclusion, letter$decline),
     .combine_loading(  readable[method == "loading"]  , loading_band   , letter$loading),
     .combine_reduction(readable[method == "reduction"], reduction_table, letter$reduction)
   ), use.names = TRUE)
 
-  combined <- .compose_decision(results, letter, priority, unique(long[, .(id, coverage)]))
+  combined <- .compose_decision(results, letter, priority, unique(melted[, .(id, coverage)]))
 
   report <- if (nrow(referred)) .unresolved_report(referred) else NULL
   setattr(combined, "decision_table",  decision_table)
   setattr(combined, "exclusion_table", exclusion_table)
   setattr(combined, "reduction_table", reduction_table)
-  setattr(combined, "band_table",      band_table)
+  setattr(combined, "loading_table",   loading_table)
   setattr(combined, "decision_cols",   decision_cols)   # rule-set coverage order, for plot()
   setattr(combined, "unresolved",      report)          # NULL when every code read cleanly
   setattr(combined, "class", c("combined_decision", "data.table", "data.frame"))
@@ -181,30 +182,47 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
                   paste(lines, collapse = "\n")))
 }
 
-# The bands of one class, ordered. A class the engine has no letter for (the rule
-# set uses no loading, say) needs no bands and gets `NULL`; its combiner is never
-# reached. Any class that does exist must be banded, or there is no way to say what
-# a given accumulation decides -- and silently leaving it unbounded would let, for
-# instance, an exclusion sprawl over every site and still auto-decide.
-.band_for <- function(band_table, letter) {
-  if (is.na(letter)) return(NULL)
-  bands <- as.data.table(band_table)[class == letter]
-  if (!nrow(bands))
-    stop(sprintf("`band_table` has no rows for class \"%s\"; every class it accumulates for needs a band.",
+# The site cap the exclusion code's `decision_table` row carries. Blank on every
+# other row, the way `role` is: a code that is not an exclusion has no sites to cap.
+# The exclusion's own row must state it, though -- a blank there reads as either "no
+# sites allowed" or "no cap", and guessing either way decides real coverages. Write a
+# large number to mean no cap, as the period marks do.
+.max_sites <- function(decision_table, letter) {
+  if (is.na(letter)) return(NA_integer_)          # the rule set writes no exclusions
+  if (!"max_sites" %in% names(decision_table))
+    stop("`decision_table` needs a `max_sites` column; the exclusion code's row carries the site cap.")
+  cap <- as.integer(decision_table$max_sites[decision_table$code == letter])
+  if (!length(cap) || is.na(cap[1L]) || cap[1L] < 1L)
+    stop(sprintf("`decision_table` needs a positive `max_sites` on the exclusion code \"%s\"; write a large number for no cap.",
                  letter))
-  bands[order(at_least)]
+  cap[1L]
 }
 
-# Map an accumulated amount -- the exclusion's distinct site count, the loading's
-# summed index -- to a decision. The band it lands in either keeps `class_output`,
-# what the class built for itself, when the band's `decision` is the bare class
-# letter, or replaces it with another code, which is how a rule set escalates to the
-# underwriter or declines outright. `pmax(., 1L)` clamps an amount below the first
-# band, which would otherwise index 0, drop the element, and recycle a wrong band
-# across the group.
-.apply_band <- function(amount, class_output, bands, letter) {
-  band <- bands$decision[pmax(findInterval(amount, bands$at_least), 1L)]
-  fifelse(band == letter, class_output, band)
+# The loading bands, ordered and checked. The staircase has to start at 0, because a
+# summed index below the first band would land `findInterval()` on 0 and index the
+# decision vector out of existence. Every band's decision has to be a code the rest
+# of the engine can read -- unless it is the bare loading letter, which is the
+# sentinel for "keep the loading itself" rather than a code at all.
+.check_loading_table <- function(loading_table, letter, decision_table, combiner,
+                                 exclusion_table, reduction_table) {
+  bands <- as.data.table(loading_table)
+  if (is.na(letter)) return(bands)                # the rule set writes no loadings
+  if (!all(c("at_least", "decision") %in% names(bands)))
+    stop("`loading_table` needs `at_least` and `decision` columns.")
+  if (!nrow(bands) || anyNA(bands$at_least))
+    stop("`loading_table` needs at least one band, and no `at_least` may be missing.")
+  if (anyDuplicated(bands$at_least))
+    stop("`loading_table` has duplicate `at_least` bounds.")
+  bands <- bands[order(at_least)]
+  if (bands$at_least[1L] != 0L)
+    stop(sprintf("`loading_table`'s first `at_least` must be 0, not %s; a summed index below the first band has nowhere to land.",
+                 bands$at_least[1L]))
+  substituted <- setdiff(bands$decision, letter)   # the bare letter is a sentinel
+  unreadable  <- .unresolvable(substituted, decision_table, combiner, exclusion_table, reduction_table)
+  if (nrow(unreadable))
+    stop(sprintf("`loading_table` band decision \"%s\" cannot be read: %s.",
+                 unreadable$code[1L], unreadable$reason[1L]))
+  bands
 }
 
 # Resolve the company's code letters from the table: class letters from the
@@ -241,13 +259,13 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 .melt_decisions <- function(applied, decision_cols, combiner, underwriter) {
   applied <- as.data.table(copy(applied))
   applied[matched == 0L, (decision_cols) := underwriter]
-  carry <- intersect(c("id", "elp_day", "kcd_main", "no"), names(applied))
-  long <- melt(applied, id.vars = carry, measure.vars = decision_cols,
-               variable.name = "coverage", value.name = "code", variable.factor = FALSE)
-  long <- long[!is.na(code) & nzchar(code)]
-  long[, method := combiner[substr(code, 1L, 1L)]]
-  long[is.na(method), method := "priority"]
-  long[]
+  carry  <- intersect(c("id", "elp_day", "kcd_main", "no"), names(applied))
+  melted <- melt(applied, id.vars = carry, measure.vars = decision_cols,
+                 variable.name = "coverage", value.name = "code", variable.factor = FALSE)
+  melted <- melted[!is.na(code) & nzchar(code)]
+  melted[, method := combiner[substr(code, 1L, 1L)]]
+  melted[is.na(method), method := "priority"]
+  melted[]
 }
 
 # The decision table itself has to be interpretable before any decision can be. A
@@ -338,11 +356,10 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 }
 
 # exclusion: split "R01(5i),R03(3i)" into sites, resolve each period, keep the
-# longest per site, drop the expired ones, and rebuild. The distinct site count is
-# what the exclusion bands on, so a rule set declines -- or refers -- an insured
-# whose exclusions sprawl over too many sites. `letter` is the company's exclusion
-# code letter (e.g. "R").
-.combine_exclusion <- function(rows, period_table, bands, letter) {
+# longest per site, drop the expired ones, and rebuild. An insured whose exclusions
+# sprawl over more than `max_sites` distinct sites is declined instead. `letter` is
+# the company's exclusion code letter (e.g. "R"); `decline` its decline code.
+.combine_exclusion <- function(rows, period_table, max_sites, letter, decline) {
   if (!nrow(rows)) return(rows[, .(id, coverage, dec = code)])
   sites <- rows[, .(token = unlist(strsplit(code, ",", fixed = TRUE))),
                 by = .(id, coverage, elp_day)]
@@ -353,22 +370,31 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   if (!nrow(sites)) return(rows[0L, .(id, coverage, dec = code)])
   per_site <- sites[, .(months = max(months)), by = .(id, coverage, site)]
   setorder(per_site, id, coverage, site)   # canonical, deterministic site order
-  built <- per_site[, .(n_site       = .N,
-                        class_output = paste(sprintf("%s%s(%s)", letter, site, .months_str(months)),
-                                             collapse = ",")),
+  built <- per_site[, .(n_site = .N,
+                        dec    = paste(sprintf("%s%s(%s)", letter, site, .months_str(months)),
+                                       collapse = ",")),
                     by = .(id, coverage)]
-  built[, .(id, coverage, dec = .apply_band(n_site, class_output, bands, letter))]
+  built[n_site > max_sites, dec := decline]
+  built[, .(id, coverage, dec)]
 }
 
-# loading: sum the indices; the sum is what the loading bands on. `letter` is the
-# company's loading code letter (e.g. "E").
+# loading: sum the indices, then read the sum off the bands. A band whose `decision`
+# is the bare loading letter carries the sum back into the code ("E" -> "E(75)");
+# any other value substitutes for it outright ("U", "D", or a fixed "E(50)"). So one
+# table expresses both a loading the engine writes itself and a threshold that
+# escalates the whole coverage. `letter` is the company's loading code letter.
+#
+# `.check_loading_table()` has already made the first band start at 0, so a summed
+# index -- never negative -- always lands on a band and `findInterval()` never
+# returns 0.
 .combine_loading <- function(rows, bands, letter) {
   if (!nrow(rows)) return(rows[, .(id, coverage, dec = code)])
   rows[, index := as.integer(sub(sprintf("^%s\\(([0-9]+)\\).*$", letter), "\\1", code))]
   rows[is.na(index), index := 0L]
   totals <- rows[, .(total = sum(index)), by = .(id, coverage)]
+  band <- bands$decision[findInterval(totals$total, bands$at_least)]
   totals[, .(id, coverage,
-             dec = .apply_band(total, sprintf("%s(%d)", letter, total), bands, letter))]
+             dec = fifelse(band == letter, sprintf("%s(%d)", letter, total), band))]
 }
 
 # reduction: resolve the period, keep the longest. `letter` is the company's

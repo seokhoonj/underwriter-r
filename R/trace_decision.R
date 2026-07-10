@@ -29,7 +29,7 @@ trace_decision <- function(applied, combined, id) {
   decision_table  <- attr(combined, "decision_table")
   exclusion_table <- attr(combined, "exclusion_table")
   reduction_table <- attr(combined, "reduction_table")
-  band_table      <- attr(combined, "band_table")
+  loading_table   <- attr(combined, "loading_table")
   if (is.null(decision_table))
     stop("`combined` has no config attributes; produce `combined` with combine_decision().")
 
@@ -67,7 +67,7 @@ trace_decision <- function(applied, combined, id) {
                     by = coverage]
 
   # recompute this id's decision and compare to the stored one
-  recomputed <- combine_decision(applied_one, decision_table, exclusion_table, reduction_table, band_table,
+  recomputed <- combine_decision(applied_one, decision_table, exclusion_table, reduction_table, loading_table,
                                  decision_cols = decision_cols)
   computed <- melt(recomputed, id.vars = "id", variable.name = "coverage", value.name = "computed",
                    variable.factor = FALSE)[, .(coverage, computed)]
