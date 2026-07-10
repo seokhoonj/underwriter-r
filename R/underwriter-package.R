@@ -2,9 +2,9 @@
 "_PACKAGE"
 
 #' @import data.table
+#' @importFrom ggplot2 .data
 #' @importFrom stats median setNames
 #' @importFrom utils head
-#' @importFrom ggplot2 .data
 NULL
 
 # data.table's non-standard evaluation references column names as bare symbols,
