@@ -47,9 +47,10 @@ relax_rule <- function(applied, combined, kcd_main, coverage = NULL) {
   if (is.null(decision_table) || is.null(decision_cols))
     stop("`combined` must come from combine_decision() and `applied` from match_rule().")
 
-  role        <- decision_table$role
-  standard    <- decision_table$code[!is.na(role) & role == "standard"][1L]
-  underwriter <- decision_table$code[!is.na(role) & role == "underwriter"][1L]
+  priority    <- setNames(as.integer(decision_table$priority), decision_table$code)
+  letter      <- .decision_letters(decision_table, priority)
+  standard    <- letter$standard
+  underwriter <- letter$underwriter
   target      <- paste(kcd_main, collapse = "|")   # a vector of codes -> OR'd
 
   base <- tabulate_decision(combined)[, .(auto_base = sum(prop[auto == "1"]),

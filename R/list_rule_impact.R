@@ -32,8 +32,8 @@ list_rule_impact <- function(applied, combined, coverage = NULL) {
   decision_table <- attr(combined, "decision_table")
   if (is.null(decision_cols) || is.null(decision_table))
     stop("`combined` must come from combine_decision() and `applied` from match_rule().")
-  role        <- decision_table$role
-  underwriter <- decision_table$code[!is.na(role) & role == "underwriter"][1L]
+  priority    <- setNames(as.integer(decision_table$priority), decision_table$code)
+  underwriter <- .decision_letters(decision_table, priority)$underwriter
 
   # cells referred to the underwriter in the combined -- the only ones that flip
   combined_long <- melt(as.data.table(combined), id.vars = "id", variable.name = "coverage",

@@ -50,9 +50,9 @@ four supplied tables ride along as attributes (\code{decision_table},
 reshape would otherwise sort away), so downstream summaries such as
 \code{\link[=tabulate_decision]{tabulate_decision()}} and \code{plot()}, and the functions that recombine
 (\code{\link[=trace_decision]{trace_decision()}}, \code{\link[=relax_rule]{relax_rule()}}), can recover them without re-passing.
-The \code{"unresolved"} attribute holds one row per unreadable decision code --
-\code{code}, \code{reason}, the \code{rule_no} and \code{kcd_main} that wrote it, and the \code{n_id} /
-\code{n_cell} it reached -- or \code{NULL} when every code read cleanly.
+The \code{"unresolved"} attribute holds one row per decision code the config tables
+could not resolve -- \code{code}, \code{reason}, the \code{rule_no} and \code{kcd_main} that wrote
+it, and the \code{n_id} / \code{n_cell} it reached -- or \code{NULL} when every code resolved.
 }
 \description{
 Collapses the per-disease decisions from \code{\link[=match_rule]{match_rule()}} to one decision per

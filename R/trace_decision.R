@@ -33,8 +33,10 @@ trace_decision <- function(applied, combined, id) {
   if (is.null(decision_table))
     stop("`combined` has no config attributes; produce `combined` with combine_decision().")
 
-  role        <- decision_table$role
-  underwriter <- decision_table$code[!is.na(role) & role == "underwriter"][1L]
+  priority    <- setNames(as.integer(decision_table$priority), decision_table$code)
+  combiner    <- setNames(decision_table$combiner, decision_table$code)
+  letter      <- .decision_letters(decision_table, priority)
+  underwriter <- letter$underwriter
 
   combined_dt <- as.data.table(combined)[id == key]
   if (!nrow(combined_dt)) stop(sprintf("id %s not found in `combined`.", format(key)))
@@ -56,11 +58,10 @@ trace_decision <- function(applied, combined, id) {
   # a coverage referred because one of its codes could not be read says so here,
   # rather than leaving the reader to wonder why an insured with a plain exclusion
   # came out as a referral
-  combiner   <- setNames(decision_table$combiner, decision_table$code)
-  unreadable <- .unresolvable(unique(inputs$code), decision_table, combiner,
-                              exclusion_table, reduction_table)
+  unresolved_codes <- .unresolved_codes(unique(inputs$code), decision_table, combiner,
+                                        exclusion_table, reduction_table)
   inputs[, reason := NA_character_]
-  if (nrow(unreadable)) inputs[unreadable, on = .(code), reason := i.reason]
+  if (nrow(unresolved_codes)) inputs[unresolved_codes, on = .(code), reason := i.reason]
   per_cov <- inputs[, .(diseases   = paste(sprintf("%s:%s", kcd_main, code), collapse = " | "),
                         unresolved = paste(unique(sprintf("%s: %s", code, reason)[!is.na(reason)]),
                                            collapse = " | ")),

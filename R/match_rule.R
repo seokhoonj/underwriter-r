@@ -15,7 +15,7 @@
 #'
 #' @param aggregated Per-`(id, kcd_main)` inputs from [aggregate_disease()],
 #'   carrying `age`.
-#' @param rule A rule-set `data.table`.
+#' @param ruleset A rule-set `data.table`.
 #' @return A list with `applied` (the input plus `matched`, `conflict`, and one
 #'   decision column per product; the decision-column names are stored on the
 #'   `"decision_cols"` attribute), `decision_cols`, `unmatched` (the input rows
@@ -27,9 +27,9 @@
 #'   matched rules disagree, so `n_conflict <= n_multi_matched`).
 #' @seealso [combine_decision()].
 #' @export
-match_rule <- function(aggregated, rule) {
-  rule <- as.data.table(rule)[decl_yn == 0L]
-  decision_cols <- setdiff(names(rule), .NON_DECISION_COLS)
+match_rule <- function(aggregated, ruleset) {
+  ruleset <- as.data.table(ruleset)[decl_yn == 0L]
+  decision_cols <- setdiff(names(ruleset), .NON_DECISION_COLS)
 
   input <- as.data.table(copy(aggregated))
   input[, rid := .I]
@@ -37,7 +37,7 @@ match_rule <- function(aggregated, rule) {
   # keep only the band-match columns + rule id + decisions; the non-equi join
   # scrambles the band columns, so we carry nothing else and merge results back
   # onto the clean input by rid.
-  rule_bands <- rule[, c("kcd_main", "age_min", "age_max", "elp_day_min", "elp_day_max",
+  rule_bands <- ruleset[, c("kcd_main", "age_min", "age_max", "elp_day_min", "elp_day_max",
                          "sur_cnt_min", "sur_cnt_max", "hos_day_min", "hos_day_max",
                          "no", "ord", decision_cols), with = FALSE]
   joined <- rule_bands[input, on = .(kcd_main,

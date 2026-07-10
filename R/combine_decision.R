@@ -91,9 +91,9 @@
 #'   reshape would otherwise sort away), so downstream summaries such as
 #'   [tabulate_decision()] and `plot()`, and the functions that recombine
 #'   ([trace_decision()], [relax_rule()]), can recover them without re-passing.
-#'   The `"unresolved"` attribute holds one row per unreadable decision code --
-#'   `code`, `reason`, the `rule_no` and `kcd_main` that wrote it, and the `n_id` /
-#'   `n_cell` it reached -- or `NULL` when every code read cleanly.
+#'   The `"unresolved"` attribute holds one row per decision code the config tables
+#'   could not resolve -- `code`, `reason`, the `rule_no` and `kcd_main` that wrote
+#'   it, and the `n_id` / `n_cell` it reached -- or `NULL` when every code resolved.
 #' @export
 combine_decision <- function(applied, decision_table, exclusion_table, reduction_table, loading_table,
                              decision_cols = attr(applied, "decision_cols")) {
@@ -103,34 +103,34 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   letter   <- .decision_letters(decision_table, priority)
   if (is.na(letter$underwriter))
     stop("`decision_table` needs a row with role == \"underwriter\"; unmatched diseases are referred there.")
-  max_sites    <- .max_sites(decision_table, letter$exclusion)
-  loading_band <- .check_loading_table(loading_table, letter$loading, decision_table,
-                                       combiner, exclusion_table, reduction_table)
+  max_sites     <- .max_sites(decision_table, letter$exclusion)
+  loading_bands <- .loading_bands(loading_table, letter$loading, decision_table,
+                                  combiner, exclusion_table, reduction_table)
 
   melted <- .melt_decisions(applied, decision_cols, combiner, letter$underwriter)
 
-  # judge the whole code vocabulary once, then keep the unreadable ones away from the
+  # judge the whole code vocabulary once, then keep the unresolved ones away from the
   # combiners: their cells are referred, and the underwriter code being terminal
   # suppresses whatever else those cells carried.
-  unreadable <- .unresolvable(unique(melted$code), decision_table, combiner,
-                              exclusion_table, reduction_table)
+  unresolved_codes <- .unresolved_codes(unique(melted$code), decision_table, combiner,
+                                        exclusion_table, reduction_table)
   melted[, reason := NA_character_]
-  if (nrow(unreadable)) melted[unreadable, on = .(code), reason := i.reason]
-  referred <- melted[!is.na(reason)]
-  readable <- melted[ is.na(reason)]
+  if (nrow(unresolved_codes)) melted[unresolved_codes, on = .(code), reason := i.reason]
+  unresolved <- melted[!is.na(reason)]
+  resolved   <- melted[ is.na(reason)]
 
   results <- rbindlist(list(
-    unique(referred[, .(id, coverage)])[, dec := letter$underwriter],
-    .combine_priority( readable[method == "priority"] , priority),
-    .combine_exclusion(readable[method == "exclusion"], exclusion_table, max_sites,
+    unique(unresolved[, .(id, coverage)])[, dec := letter$underwriter],
+    .combine_priority( resolved[method == "priority"] , priority),
+    .combine_exclusion(resolved[method == "exclusion"], exclusion_table, max_sites,
                        letter$exclusion, letter$decline),
-    .combine_loading(  readable[method == "loading"]  , loading_band   , letter$loading),
-    .combine_reduction(readable[method == "reduction"], reduction_table, letter$reduction)
+    .combine_loading(  resolved[method == "loading"]  , loading_bands  , letter$loading),
+    .combine_reduction(resolved[method == "reduction"], reduction_table, letter$reduction)
   ), use.names = TRUE)
 
   combined <- .compose_decision(results, letter, priority, unique(melted[, .(id, coverage)]))
 
-  report <- if (nrow(referred)) .unresolved_report(referred) else NULL
+  report <- if (nrow(unresolved)) .unresolved_report(unresolved) else NULL
   setattr(combined, "decision_table",  decision_table)
   setattr(combined, "exclusion_table", exclusion_table)
   setattr(combined, "reduction_table", reduction_table)
@@ -146,12 +146,12 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 # carried it, and how far it reached. `no` and `kcd_main` are there only when
 # `applied` came from match_rule(); without them the report still names the code and
 # the reason, it just cannot point at the rule row to fix.
-.unresolved_report <- function(referred) {
-  report <- referred[, .(n_id = uniqueN(id), n_cell = .N), by = .(code, reason)]
-  if ("no" %in% names(referred))
-    report[referred[, .(rule_no = .abbreviate(unique(no))), by = code], on = .(code), rule_no := i.rule_no]
-  if ("kcd_main" %in% names(referred))
-    report[referred[, .(kcd_main = .abbreviate(unique(kcd_main))), by = code], on = .(code), kcd_main := i.kcd_main]
+.unresolved_report <- function(unresolved) {
+  report <- unresolved[, .(n_id = uniqueN(id), n_cell = .N), by = .(code, reason)]
+  if ("no" %in% names(unresolved))
+    report[unresolved[, .(rule_no = .join_some(unique(no))), by = code], on = .(code), rule_no := i.rule_no]
+  if ("kcd_main" %in% names(unresolved))
+    report[unresolved[, .(kcd_main = .join_some(unique(kcd_main))), by = code], on = .(code), kcd_main := i.kcd_main]
   setcolorder(report, intersect(c("code", "reason", "rule_no", "kcd_main", "n_id", "n_cell"), names(report)))
   setorder(report, -n_cell)
   report[]
@@ -159,7 +159,7 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 
 # A comma-joined sample of the values, so one bad code spread over hundreds of rules
 # still reports in one line.
-.abbreviate <- function(x, max_shown = 5L) {
+.join_some <- function(x, max_shown = 5L) {
   x <- sort(x[!is.na(x)])
   if (length(x) > max_shown)
     sprintf("%s, +%d more", paste(head(x, max_shown), collapse = ","), length(x) - max_shown)
@@ -203,7 +203,7 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 # decision vector out of existence. Every band's decision has to be a code the rest
 # of the engine can read -- unless it is the bare loading letter, which is the
 # sentinel for "keep the loading itself" rather than a code at all.
-.check_loading_table <- function(loading_table, letter, decision_table, combiner,
+.loading_bands <- function(loading_table, letter, decision_table, combiner,
                                  exclusion_table, reduction_table) {
   bands <- as.data.table(loading_table)
   if (is.na(letter)) return(bands)                # the rule set writes no loadings
@@ -218,10 +218,10 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
     stop(sprintf("`loading_table`'s first `at_least` must be 0, not %s; a summed index below the first band has nowhere to land.",
                  bands$at_least[1L]))
   substituted <- setdiff(bands$decision, letter)   # the bare letter is a sentinel
-  unreadable  <- .unresolvable(substituted, decision_table, combiner, exclusion_table, reduction_table)
-  if (nrow(unreadable))
+  unresolved <- .unresolved_codes(substituted, decision_table, combiner, exclusion_table, reduction_table)
+  if (nrow(unresolved))
     stop(sprintf("`loading_table` band decision \"%s\" cannot be read: %s.",
-                 unreadable$code[1L], unreadable$reason[1L]))
+                 unresolved$code[1L], unresolved$reason[1L]))
   bands
 }
 
@@ -306,7 +306,7 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 #
 # The payload of a `priority` class (a limit code, a diagnosis code) is free text with
 # no syntax of its own, so only its class letter is checked.
-.unresolvable <- function(codes, decision_table, combiner, exclusion_table, reduction_table) {
+.unresolved_codes <- function(codes, decision_table, combiner, exclusion_table, reduction_table) {
   reason <- vapply(codes, function(code) {
     letter <- substr(code, 1L, 1L)
     if (!letter %in% decision_table$code)
@@ -384,7 +384,7 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 # table expresses both a loading the engine writes itself and a threshold that
 # escalates the whole coverage. `letter` is the company's loading code letter.
 #
-# `.check_loading_table()` has already made the first band start at 0, so a summed
+# `.loading_bands()` has already made the first band start at 0, so a summed
 # index -- never negative -- always lands on a band and `findInterval()` never
 # returns 0.
 .combine_loading <- function(rows, bands, letter) {
@@ -392,9 +392,9 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   rows[, index := as.integer(sub(sprintf("^%s\\(([0-9]+)\\).*$", letter), "\\1", code))]
   rows[is.na(index), index := 0L]
   totals <- rows[, .(total = sum(index)), by = .(id, coverage)]
-  band <- bands$decision[findInterval(totals$total, bands$at_least)]
+  band_decision <- bands$decision[findInterval(totals$total, bands$at_least)]
   totals[, .(id, coverage,
-             dec = fifelse(band == letter, sprintf("%s(%d)", letter, total), band))]
+             dec = fifelse(band_decision == letter, sprintf("%s(%d)", letter, total), band_decision))]
 }
 
 # reduction: resolve the period, keep the longest. `letter` is the company's
@@ -425,7 +425,7 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 # `priority` only ranks the terminals against each other here. The composed order
 # is `sheet_ord`, the decision table's row order, so two composing codes may hold
 # the same priority number without their output order becoming arbitrary.
-.compose_decision <- function(results, letter, priority, all_pairs) {
+.compose_decision <- function(results, letter, priority, all_cells) {
   results[, class_letter := substr(dec, 1L, 1L)]
   results[, rank := priority[class_letter]]
   results[is.na(rank), rank := max(priority) + 1L]
@@ -441,7 +441,7 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   composed <- rest[, .(dec = paste(dec, collapse = ",")), by = .(id, coverage)]
 
   final <- rbind(alone, composed)
-  final <- final[all_pairs, on = .(id, coverage)]
+  final <- final[all_cells, on = .(id, coverage)]
   final[is.na(dec), dec := letter$standard]
   dcast(final, id ~ coverage, value.var = "dec")
 }
