@@ -4,12 +4,12 @@
 \alias{tabulate_decision}
 \title{Tabulate the decision distribution per coverage}
 \usage{
-tabulate_decision(final, id_col = "id")
+tabulate_decision(combined, id_col = "id")
 }
 \arguments{
-\item{final}{A wide final-decision table from \code{\link[=combine_decision]{combine_decision()}}, carrying
-the \code{decision_table} attribute it attaches; that table's \code{auto} column flags
-each code as auto (\code{1}) or manual review (\code{0}).}
+\item{combined}{A wide combined-decision table from \code{\link[=combine_decision]{combine_decision()}},
+carrying the \code{decision_table} attribute it attaches; that table's \code{auto}
+column flags each code as auto (\code{1}) or manual review (\code{0}).}
 
 \item{id_col}{Name of the id column to exclude from the coverages
 (default \code{"id"}).}

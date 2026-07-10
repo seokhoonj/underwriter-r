@@ -1,6 +1,6 @@
 # A tiny synthetic underwriting fixture (no real claim data). Two coverages,
 # a handful of insured, a decision-code table, and a per-disease `applied` table
-# that produces a known `final`. Used across the decision/relaxation tests.
+# that produces a known `combined`. Used across the decision/relaxation tests.
 #
 # `applied` layout (id x kcd_main, one row each), decision on cov1/cov2:
 #   A: M543 (cov1=U, cov2=S), M542 (cov1=S, cov2=U)   -> cov1=U (M543 sole), cov2=U (M542 sole)
@@ -33,10 +33,10 @@ fixture <- function() {
   )
   data.table::setattr(applied, "decision_cols", decision_cols)
 
-  final <- combine_decision(applied, decision_table, exclusion_table,
-                            reduction_table, loading_table)
+  combined <- combine_decision(applied, decision_table, exclusion_table,
+                               reduction_table, loading_table)
 
-  list(applied = applied, final = final,
+  list(applied = applied, combined = combined,
        decision_table = decision_table, exclusion_table = exclusion_table,
        reduction_table = reduction_table, loading_table = loading_table,
        decision_cols = decision_cols)

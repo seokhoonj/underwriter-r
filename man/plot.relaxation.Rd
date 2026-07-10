@@ -16,10 +16,10 @@
 
 \item{...}{Unused.}
 
-\item{coverage}{For a per-coverage ranking
-(\code{list_rule_impact(..., by_coverage = TRUE)}), the single coverage to plot,
-e.g. \code{"adb"}. Slice through this argument rather than subsetting the object
-first -- data.table's \code{[} drops the class that method dispatch relies on.}
+\item{coverage}{The single coverage to plot from a \code{\link[=list_rule_impact]{list_rule_impact()}} result
+(which is per-coverage), e.g. \code{"adb"}. Slice through this argument rather than
+subsetting the object first -- data.table's \code{[} drops the class that method
+dispatch relies on.}
 
 \item{top}{Rows to show: the ranking keeps the top \code{12}, the relaxed-rule plot
 defaults to \code{NULL} (every coverage the rule moves).}

@@ -52,24 +52,24 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
     .combine_reduction(long[method == "reduction"], reduction_table, letter$reduction)
   ), use.names = TRUE)
 
-  final <- .pick_worst(results, priority, unique(long[, .(id, coverage)]), letter$standard)
+  combined <- .pick_worst(results, priority, unique(long[, .(id, coverage)]), letter$standard)
 
   # applicants with no disease-based decision (e.g. no diagnosis code): standard
   # on every coverage, so they count as an automatic pass downstream.
-  missing <- setdiff(pass_ids, final$id)
+  missing <- setdiff(pass_ids, combined$id)
   if (length(missing)) {
     passed <- data.table(id = missing)
-    passed[, (decision_cols) := letter$standard]   # decision_cols, not names(final): an
-    final <- rbind(final, passed, use.names = TRUE, fill = TRUE)   # all-pass run dcasts to id-only
+    passed[, (decision_cols) := letter$standard]   # decision_cols, not names(combined): an
+    combined <- rbind(combined, passed, use.names = TRUE, fill = TRUE)   # all-pass run dcasts to id-only
   }
 
-  setattr(final, "decision_table",  decision_table)
-  setattr(final, "exclusion_table", exclusion_table)
-  setattr(final, "reduction_table", reduction_table)
-  setattr(final, "loading_table",   loading_table)
-  setattr(final, "decision_cols",   decision_cols)   # rule-set coverage order, for plot()
-  setattr(final, "class", c("combined_decision", "data.table", "data.frame"))
-  final
+  setattr(combined, "decision_table",  decision_table)
+  setattr(combined, "exclusion_table", exclusion_table)
+  setattr(combined, "reduction_table", reduction_table)
+  setattr(combined, "loading_table",   loading_table)
+  setattr(combined, "decision_cols",   decision_cols)   # rule-set coverage order, for plot()
+  setattr(combined, "class", c("combined_decision", "data.table", "data.frame"))
+  combined
 }
 
 # Resolve the company's code letters from the table: class letters from the

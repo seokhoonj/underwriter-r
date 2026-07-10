@@ -25,13 +25,13 @@ plot.combined_decision <- function(x, ..., group = c("auto", "category"),
                                    order = c("auto_high", "auto_low", "column"),
                                    min_label = 0.03,
                                    title = "Decision composition per coverage") {
-  final <- x
-  group <- match.arg(group)
-  order <- match.arg(order)
-  tab   <- tabulate_decision(final)
+  combined <- x
+  group    <- match.arg(group)
+  order    <- match.arg(order)
+  tab      <- tabulate_decision(combined)
 
   coverage_levels <- if (order == "column") {
-    cols <- attr(final, "decision_cols")
+    cols <- attr(combined, "decision_cols")
     covs <- unique(tab$coverage)
     if (is.null(cols)) sort(covs) else c(intersect(cols, covs), setdiff(covs, cols))
   } else {
@@ -40,10 +40,10 @@ plot.combined_decision <- function(x, ..., group = c("auto", "category"),
     if (order == "auto_high") rev(auto_prop$coverage) else auto_prop$coverage
   }
 
-  d <- tab[, .(prop = sum(prop)), by = c("coverage", group)]
-  d[, coverage := factor(coverage, levels = coverage_levels)]
+  plot_data <- tab[, .(prop = sum(prop)), by = c("coverage", group)]
+  plot_data[, coverage := factor(coverage, levels = coverage_levels)]
 
-  p <- ggplot2::ggplot(d, ggplot2::aes(x = coverage, y = prop, fill = .data[[group]])) +
+  p <- ggplot2::ggplot(plot_data, ggplot2::aes(x = coverage, y = prop, fill = .data[[group]])) +
     ggplot2::geom_col() +
     ggplot2::geom_text(
       ggplot2::aes(label = ifelse(prop > min_label, round(prop * 100), NA_real_)),

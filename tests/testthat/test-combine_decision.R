@@ -1,10 +1,10 @@
 test_that("combine_decision produces the expected per-insured decisions", {
   f <- fixture()
-  final <- f$final
-  expect_s3_class(final, "combined_decision")
-  expect_setequal(final$id, c("A", "B", "C", "D"))
-  expect_true(all(c("cov1", "cov2") %in% names(final)))
-  g <- function(i, cov) final[id == i][[cov]]
+  combined <- f$combined
+  expect_s3_class(combined, "combined_decision")
+  expect_setequal(combined$id, c("A", "B", "C", "D"))
+  expect_true(all(c("cov1", "cov2") %in% names(combined)))
+  g <- function(i, cov) combined[id == i][[cov]]
   expect_equal(g("A", "cov1"), "U")   # M543 U wins over M542 S (worst code)
   expect_equal(g("A", "cov2"), "U")   # M542 U wins over M543 S
   expect_equal(g("B", "cov2"), "D")   # decline wins (lowest priority)
@@ -25,17 +25,17 @@ test_that("combine_decision errors without a manual_review role", {
 
 test_that("combine_decision auto-passes pass_ids not present in applied", {
   f <- fixture()
-  final <- combine_decision(f$applied, f$decision_table, f$exclusion_table,
-                            f$reduction_table, f$loading_table, pass_ids = c("X", "Y"))
-  expect_true(all(c("X", "Y") %in% final$id))
-  x <- final[id == "X"]
+  combined <- combine_decision(f$applied, f$decision_table, f$exclusion_table,
+                               f$reduction_table, f$loading_table, pass_ids = c("X", "Y"))
+  expect_true(all(c("X", "Y") %in% combined$id))
+  x <- combined[id == "X"]
   expect_equal(x$cov1, "S")
   expect_equal(x$cov2, "S")
 })
 
 test_that("tabulate_decision flags auto vs manual review and sums to 1 per coverage", {
   f <- fixture()
-  tab <- tabulate_decision(f$final)
+  tab <- tabulate_decision(f$combined)
   expect_true(all(c("coverage", "decision", "category", "auto", "n", "prop") %in% names(tab)))
   expect_equal(as.character(tab[decision == "U", unique(auto)]), "0")
   expect_equal(as.character(tab[decision == "D", unique(auto)]), "1")
@@ -44,24 +44,24 @@ test_that("tabulate_decision flags auto vs manual review and sums to 1 per cover
 
 test_that("tabulate_decision handles a logical auto column", {
   f <- fixture()
-  final <- data.table::copy(f$final)
+  combined <- data.table::copy(f$combined)
   dec <- data.table::copy(f$decision_table)
   dec[, auto := auto == 1L]                    # logical TRUE/FALSE
-  data.table::setattr(final, "decision_table", dec)
-  tab <- tabulate_decision(final)
+  data.table::setattr(combined, "decision_table", dec)
+  tab <- tabulate_decision(combined)
   expect_false(anyNA(tab$auto))                # not coerced to NA through as.character
   expect_equal(as.character(tab[decision == "U", unique(auto)]), "0")
 })
 
 test_that("trace_decision reproduces a normal id and a pass id", {
   f <- fixture()
-  tr <- trace_decision(f$applied, f$final, "A")
+  tr <- trace_decision(f$applied, f$combined, "A")
   expect_true(all(c("coverage", "diseases", "computed", "stored", "ok") %in% names(tr)))
   expect_true(all(tr$ok))
 
-  final <- combine_decision(f$applied, f$decision_table, f$exclusion_table,
-                            f$reduction_table, f$loading_table, pass_ids = "Z")
-  trz <- trace_decision(f$applied, final, "Z")   # pass id absent from applied
+  combined <- combine_decision(f$applied, f$decision_table, f$exclusion_table,
+                               f$reduction_table, f$loading_table, pass_ids = "Z")
+  trz <- trace_decision(f$applied, combined, "Z")   # pass id absent from applied
   expect_true(all(trz$ok))
   expect_true(all(trz$computed == "S"))
 })

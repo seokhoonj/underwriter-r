@@ -4,12 +4,12 @@
 \alias{relax_rule}
 \title{Relax a rule (or set of rules) and measure the per-coverage lift}
 \usage{
-relax_rule(applied, final, kcd_main, coverage = NULL)
+relax_rule(applied, combined, kcd_main, coverage = NULL)
 }
 \arguments{
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
 
-\item{final}{The baseline wide decision table from \code{\link[=combine_decision]{combine_decision()}},
+\item{combined}{The baseline wide decision table from \code{\link[=combine_decision]{combine_decision()}},
 carrying its config-table attributes.}
 
 \item{kcd_main}{One or more patterns matched against \code{kcd_main}, relaxed

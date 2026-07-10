@@ -44,15 +44,15 @@ plot.rule_impact_list <- function(x, ..., coverage = NULL, top = 12L, fill = "#4
   if (!nrow(x))
     stop("no rows to plot (the coverage slice has no relaxable diseases).")
 
-  d <- head(x, top)
+  plot_data <- head(x, top)
   if (is.null(title))
     title <- if (is.null(cov)) "Diseases to relax for the biggest automation-rate gain"
              else sprintf("Diseases that lift the %s coverage", cov)
   ylab <- if (is.null(cov)) "overall automation-rate lift (%p)"
           else sprintf("%s automation-rate lift (%%p)", cov)
 
-  ggplot2::ggplot(d, ggplot2::aes(x = stats::reorder(.data$kcd_main, .data$auto_lift),
-                                  y = .data$auto_lift * 100)) +
+  ggplot2::ggplot(plot_data, ggplot2::aes(x = stats::reorder(.data$kcd_main, .data$auto_lift),
+                                          y = .data$auto_lift * 100)) +
     ggplot2::geom_col(fill = fill) +
     ggplot2::geom_text(
       ggplot2::aes(label = sprintf("%.2f%%p (%s)", .data$auto_lift * 100,
@@ -72,12 +72,12 @@ plot.rule_impact_list <- function(x, ..., coverage = NULL, top = 12L, fill = "#4
 #' @method plot relaxed_rule
 #' @export
 plot.relaxed_rule <- function(x, ..., disease = NULL, top = NULL, title = NULL) {
-  d <- as.data.table(x)[auto_relaxed != auto_base]   # only coverages it moves
-  if (!nrow(d)) stop("this relaxation moved no coverage; nothing to plot.")
-  if (!is.null(top)) d <- head(d[order(-abs(lift))], top)
-  d[, coverage := factor(coverage, levels = d[order(auto_relaxed), coverage])]
+  plot_data <- as.data.table(x)[auto_relaxed != auto_base]   # only coverages it moves
+  if (!nrow(plot_data)) stop("this relaxation moved no coverage; nothing to plot.")
+  if (!is.null(top)) plot_data <- head(plot_data[order(-abs(lift))], top)
+  plot_data[, coverage := factor(coverage, levels = plot_data[order(auto_relaxed), coverage])]
 
-  long <- melt(d, id.vars = "coverage", measure.vars = c("auto_base", "auto_relaxed"),
+  long <- melt(plot_data, id.vars = "coverage", measure.vars = c("auto_base", "auto_relaxed"),
                variable.name = "state", value.name = "share")
   long[, state := factor(fifelse(state == "auto_base", "baseline", "relaxed"),
                          levels = c("baseline", "relaxed"))]
@@ -88,16 +88,16 @@ plot.relaxed_rule <- function(x, ..., disease = NULL, top = NULL, title = NULL) 
 
   ggplot2::ggplot() +
     ggplot2::geom_segment(
-      data = d, ggplot2::aes(y = .data$coverage, yend = .data$coverage,
-                             x = .data$auto_base * 100, xend = .data$auto_relaxed * 100),
+      data = plot_data, ggplot2::aes(y = .data$coverage, yend = .data$coverage,
+                                     x = .data$auto_base * 100, xend = .data$auto_relaxed * 100),
       colour = "grey70", linewidth = 1) +
     ggplot2::geom_point(
       data = long, ggplot2::aes(y = .data$coverage, x = .data$share * 100, colour = .data$state),
       size = 2.8) +
     ggplot2::geom_text(
-      data = d, ggplot2::aes(y = .data$coverage, x = .data$auto_relaxed * 100,
-                             label = sprintf("%+.1f%%p (%s)", .data$lift * 100,
-                                             format(.data$n_flipped, big.mark = ","))),
+      data = plot_data, ggplot2::aes(y = .data$coverage, x = .data$auto_relaxed * 100,
+                                     label = sprintf("%+.1f%%p (%s)", .data$lift * 100,
+                                                     format(.data$n_flipped, big.mark = ","))),
       hjust = -0.15, size = 3) +
     ggplot2::scale_colour_manual(values = c(baseline = "grey50", relaxed = "#4E79A7")) +
     ggplot2::scale_x_continuous(expand = ggplot2::expansion(mult = c(0.02, 0.2))) +

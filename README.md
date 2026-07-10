@@ -24,22 +24,23 @@ remotes::install_github("seokhoonj/underwriter-r")
 ```r
 library(underwriter)
 
-clean   <- filter_latest_inquiry(clean_icis(raw))       # cleanse, keep latest inquiry
-long    <- map_disease(melt_kcd(clean), disease)        # code -> representative disease
-matched <- match_rule(aggregate_disease(long), ruleset) # band-match the rule set
-final   <- combine_decision(matched$applied, decision, exclusion, reduction, loading)
+cleaned  <- filter_latest_inquiry(clean_icis(raw))         # cleanse, keep latest inquiry
+mapped   <- map_disease(melt_kcd(cleaned), disease)        # code -> representative disease
+matched  <- match_rule(aggregate_disease(mapped), ruleset) # band-match the rule set
+applied  <- matched$applied
+combined <- combine_decision(applied, decision_table, exclusion_table, reduction_table, loading_table)
 ```
 
-`final` is one row per insured, one column per coverage, holding the final
+`combined` is one row per insured, one column per coverage, holding the final
 decision code; the config tables ride along as attributes.
 
 ## Summaries
 
 ```r
-tabulate_decision(final)                      # decision distribution per coverage
-plot(final)                                   # stacked bar of the composition
-diagnose_icis(raw)                            # data-quality report
-trace_decision(matched$applied, final, id)    # audit one insured's decision
+tabulate_decision(combined)           # decision distribution per coverage
+plot(combined)                        # stacked bar of the composition
+diagnose_icis(raw)                    # data-quality report
+trace_decision(applied, combined, id) # audit one insured's decision
 ```
 
 ## Relaxation analysis
@@ -48,14 +49,12 @@ Which rules to relax to lift the automation rate (share of auto-decided,
 non-manual-review cells) -- all per coverage:
 
 ```r
-applied <- matched$applied
+list_rule_impact(applied, combined)                         # each rule's marginal impact
+relax_rule(applied, combined, "M543")                       # one rule, per-coverage before/after
+decompose_rule_impact(applied, combined, c("M543", "M542")) # marginal / joint / synergy
 
-list_rule_impact(applied, final)                        # each rule's marginal impact
-relax_rule(applied, final, "M543")                      # one rule, per-coverage before/after
-decompose_rule_impact(applied, final, c("M543", "M542"))# marginal / combined / synergy
-
-plot(list_rule_impact(applied, final), coverage = "adb")   # ranking bar for a coverage
-plot(relax_rule(applied, final, "M543"))                   # before/after dumbbell
+plot(list_rule_impact(applied, combined), coverage = "adb") # ranking bar for a coverage
+plot(relax_rule(applied, combined, "M543"))                 # before/after dumbbell
 ```
 
 Pass `coverage = "adb"` (or a vector) to restrict any of these to specific

@@ -8,9 +8,9 @@
 #' the most common outcome (standard, decline, review) leads and the long tail
 #' of exclusion combinations follows.
 #'
-#' @param final A wide final-decision table from [combine_decision()], carrying
-#'   the `decision_table` attribute it attaches; that table's `auto` column flags
-#'   each code as auto (`1`) or manual review (`0`).
+#' @param combined A wide combined-decision table from [combine_decision()],
+#'   carrying the `decision_table` attribute it attaches; that table's `auto`
+#'   column flags each code as auto (`1`) or manual review (`0`).
 #' @param id_col Name of the id column to exclude from the coverages
 #'   (default `"id"`).
 #' @return A long `data.table` with columns `coverage`, `decision`, `category`
@@ -23,13 +23,13 @@
 #'   coverage's proportions sum to 1).
 #' @seealso [combine_decision()].
 #' @export
-tabulate_decision <- function(final, id_col = "id") {
-  decision_table <- attr(final, "decision_table")
+tabulate_decision <- function(combined, id_col = "id") {
+  decision_table <- attr(combined, "decision_table")
   if (is.null(decision_table))
-    stop("`final` has no `decision_table` attribute; produce `final` with combine_decision().")
-  final <- as.data.table(final)
-  coverages <- setdiff(names(final), id_col)
-  long <- melt(final, id.vars = id_col, measure.vars = coverages,
+    stop("`combined` has no `decision_table` attribute; produce `combined` with combine_decision().")
+  combined <- as.data.table(combined)
+  coverages <- setdiff(names(combined), id_col)
+  long <- melt(combined, id.vars = id_col, measure.vars = coverages,
                variable.name = "coverage", value.name = "decision",
                variable.factor = FALSE)
   long <- long[!is.na(decision) & nzchar(decision)]   # skip coverages an id was never evaluated on

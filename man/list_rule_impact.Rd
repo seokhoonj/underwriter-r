@@ -4,12 +4,12 @@
 \alias{list_rule_impact}
 \title{List each rule's marginal (independent) auto-rate impact by coverage}
 \usage{
-list_rule_impact(applied, final, coverage = NULL)
+list_rule_impact(applied, combined, coverage = NULL)
 }
 \arguments{
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
 
-\item{final}{The wide decision table from \code{\link[=combine_decision]{combine_decision()}}, carrying its
+\item{combined}{The wide decision table from \code{\link[=combine_decision]{combine_decision()}}, carrying its
 config-table attributes.}
 
 \item{coverage}{Optional coverage name(s) to restrict to (e.g. \code{"adb"} or
@@ -40,5 +40,5 @@ ones a decline outranks -- are not counted, so the auto share can only rise.
 }
 \seealso{
 \code{\link[=relax_rule]{relax_rule()}} for one rule's per-coverage detail,
-\code{\link[=decompose_rule_impact]{decompose_rule_impact()}} for a rule set's marginal/combined/synergy split.
+\code{\link[=decompose_rule_impact]{decompose_rule_impact()}} for a rule set's marginal/joint/synergy split.
 }

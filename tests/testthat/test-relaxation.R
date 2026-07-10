@@ -1,6 +1,6 @@
 test_that("list_rule_impact is per-coverage with sole-source marginals", {
   f <- fixture()
-  li <- list_rule_impact(f$applied, f$final)
+  li <- list_rule_impact(f$applied, f$combined)
   expect_s3_class(li, "rule_impact_list")
   expect_equal(names(li), c("coverage", "kcd_main", "n_id", "n_flipped", "auto_lift"))
   n <- function(cov, k) {
@@ -18,13 +18,13 @@ test_that("list_rule_impact is per-coverage with sole-source marginals", {
 
 test_that("list_rule_impact coverage filter restricts to the given coverage", {
   f <- fixture()
-  li <- list_rule_impact(f$applied, f$final, coverage = "cov1")
+  li <- list_rule_impact(f$applied, f$combined, coverage = "cov1")
   expect_equal(unique(li$coverage), "cov1")
 })
 
 test_that("relax_rule flips the sole-source cells and only ever rises", {
   f <- fixture()
-  rr <- relax_rule(f$applied, f$final, "M543")
+  rr <- relax_rule(f$applied, f$combined, "M543")
   expect_s3_class(rr, "relaxed_rule")
   expect_equal(names(rr), c("coverage", "auto_base", "auto_relaxed", "lift", "n_flipped"))
   fl <- function(cov) rr[coverage == cov, n_flipped]
@@ -35,35 +35,35 @@ test_that("relax_rule flips the sole-source cells and only ever rises", {
 
 test_that("relax_rule coverage filter returns only that coverage", {
   f <- fixture()
-  rr <- relax_rule(f$applied, f$final, "M543", coverage = "cov1")
+  rr <- relax_rule(f$applied, f$combined, "M543", coverage = "cov1")
   expect_equal(rr$coverage, "cov1")
   expect_equal(nrow(rr), 1L)
 })
 
-test_that("decompose_rule_impact splits into individual/combined/synergy per coverage", {
+test_that("decompose_rule_impact splits into individual/joint/synergy per coverage", {
   f <- fixture()
-  dc <- decompose_rule_impact(f$applied, f$final, c("M543", "M542"))
+  dc <- decompose_rule_impact(f$applied, f$combined, c("M543", "M542"))
   expect_equal(names(dc), c("coverage", "component", "n_flipped", "auto_lift"))
   g <- function(cov, comp) dc[coverage == cov & component == comp, n_flipped]
-  # cov1: individual = M543(2) + M542(0); combined flips A, B, D = 3; synergy = 1 (D co-held)
+  # cov1: individual = M543(2) + M542(0); joint flips A, B, D = 3; synergy = 1 (D co-held)
   expect_equal(g("cov1", "individual"), 2)
-  expect_equal(g("cov1", "combined"),   3)
+  expect_equal(g("cov1", "joint"),      3)
   expect_equal(g("cov1", "synergy"),    1)
-  # synergy = combined - individual on every coverage
+  # synergy = joint - individual on every coverage
   w <- data.table::dcast(dc, coverage ~ component, value.var = "n_flipped")
-  expect_equal(w$synergy, w$combined - w$individual)
+  expect_equal(w$synergy, w$joint - w$individual)
 })
 
-test_that("decompose_rule_impact combined equals relax_rule on the whole set", {
+test_that("decompose_rule_impact joint equals relax_rule on the whole set", {
   f <- fixture()
-  dc <- decompose_rule_impact(f$applied, f$final, c("M543", "M542"))
-  rr <- relax_rule(f$applied, f$final, c("M543", "M542"))
-  from_decomp <- dc[component == "combined"][order(coverage)]
+  dc <- decompose_rule_impact(f$applied, f$combined, c("M543", "M542"))
+  rr <- relax_rule(f$applied, f$combined, c("M543", "M542"))
+  from_decomp <- dc[component == "joint"][order(coverage)]
   from_relax  <- rr[, .(n_flipped = sum(n_flipped)), by = coverage][order(coverage)]
   expect_equal(from_decomp$n_flipped, from_relax$n_flipped)
 })
 
 test_that("decompose_rule_impact needs at least two codes", {
   f <- fixture()
-  expect_error(decompose_rule_impact(f$applied, f$final, "M543"), "at least two")
+  expect_error(decompose_rule_impact(f$applied, f$combined, "M543"), "at least two")
 })

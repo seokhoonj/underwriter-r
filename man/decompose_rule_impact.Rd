@@ -2,14 +2,14 @@
 % Please edit documentation in R/decompose_rule_impact.R
 \name{decompose_rule_impact}
 \alias{decompose_rule_impact}
-\title{Decompose the joint rule impact into marginal, combined, and synergy per coverage}
+\title{Decompose the joint rule impact into marginal, joint, and synergy per coverage}
 \usage{
-decompose_rule_impact(applied, final, kcd_main, coverage = NULL)
+decompose_rule_impact(applied, combined, kcd_main, coverage = NULL)
 }
 \arguments{
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
 
-\item{final}{The baseline wide decision table from \code{\link[=combine_decision]{combine_decision()}}.}
+\item{combined}{The baseline wide decision table from \code{\link[=combine_decision]{combine_decision()}}.}
 
 \item{kcd_main}{A character vector of two or more exact representative codes
 (e.g. \code{c("M543", "M542", "M13")}) to relax together. Each is matched exactly;
@@ -20,7 +20,7 @@ for regex families relax them with \code{\link[=relax_rule]{relax_rule()}} direc
 }
 \value{
 A \code{data.table} with one row per \verb{(coverage, component)} -- \code{coverage},
-\code{component} (\code{individual}/\code{combined}/\code{synergy}), \code{n_flipped} (insured x
+\code{component} (\code{individual}/\code{joint}/\code{synergy}), \code{n_flipped} (insured x
 coverage cells moved off manual review), and \code{auto_lift} (\code{n_flipped} over
 that coverage's cells).
 }
@@ -29,7 +29,7 @@ Relaxing a set of rules at once lifts the automation rate by \emph{more} than th
 sum of relaxing each alone: a cell held on manual review by two of them flips
 only when both are relaxed, so it is credited to neither marginal. This splits
 the joint rule impact, per coverage, into the sum of the marginals
-(\code{individual}), the actual combined lift (\code{combined}), and the \code{synergy}
+(\code{individual}), the actual joint lift (\code{joint}), and the \code{synergy}
 between them -- the co-held cells the marginals miss. Every piece is an exact
 re-combine via \code{\link[=relax_rule]{relax_rule()}}.
 }

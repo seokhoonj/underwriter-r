@@ -34,5 +34,5 @@ utils::globalVariables(c(
   # disease relaxation experiment
   "auto_base", "auto_relaxed", "lift", "n_flipped", "n_total",
   "n_causes", "n_id", "auto_lift", "n_cov", "state", "share",
-  "component", "individual", "combined", "synergy"
+  "component", "individual", "joint", "synergy"
 ))
