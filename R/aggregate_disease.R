@@ -14,6 +14,11 @@
 #' dedup-union of hospital calendar days ([instead::count_stay()]); `sur_cnt` and
 #' `out_cnt` count distinct accident dates.
 #'
+#' Every `id` in `mapped` gets at least one row. An insured whose every diagnosis
+#' fell outside its lookback window has nothing in scope to underwrite, and is
+#' carried on the no-diagnosis code `"AAA"` with zero counts and the days since
+#' their most recent treatment.
+#'
 #' @param mapped A long, mapped table from [map_disease()].
 #' @return A `data.table`, one row per `(id, kcd_main)`, with `age`, `hos_day`,
 #'   `sur_cnt`, `out_cnt`, `hos_elp_day`, `sur_elp_day`, `out_elp_day`, `elp_day`.
@@ -27,8 +32,14 @@ aggregate_disease <- function(mapped) {
 
   # (id, kcd_main) universe: within the disease lookback window; for ZZZ (no
   # lookback) fall back to the 5-year window.
-  in_scope   <- reviewed[in_lookback == 1L | (kcd_main == "ZZZ" & in_5yr == 1L)]
-  id_disease <- unique(in_scope[, .(id, kcd_main)])
+  in_scope <- reviewed[in_lookback == 1L | (kcd_main == .KCD_UNMAPPED & in_5yr == 1L)]
+
+  # a codeless claim line marks the line, not the insured: someone with any real
+  # diagnosis in scope has something to underwrite, so their codeless lines add
+  # nothing. Keep the no-diagnosis code only where it is the whole story.
+  underwritable <- unique(in_scope[kcd_main != .KCD_NO_DIAGNOSIS, id])
+  in_scope      <- in_scope[kcd_main != .KCD_NO_DIAGNOSIS | !id %in% underwritable]
+  id_disease    <- unique(in_scope[, .(id, kcd_main)])
 
   # per-treatment-type elapsed days, each the most recent (min) within scope
   hos_elp_day <- in_scope[hos_day > 0,                 .(hos_elp_day = min(elapsed)), by = .(id, kcd_main)]
@@ -54,7 +65,23 @@ aggregate_disease <- function(mapped) {
   # general-insurance elapsed = days since the most recent treatment of any type
   result[, elp_day := pmin(hos_elp_day, sur_elp_day, out_elp_day, na.rm = TRUE)]
   # age (per insured) travels with each disease row -- the rule bands on it
-  result[reviewed[, .(age = max(as.integer(age))), by = id], on = .(id), age := i.age]
+  ages <- reviewed[, .(age = max(as.integer(age))), by = id]
+  result[ages, on = .(id), age := i.age]
+
+  # an insured whose every diagnosis fell outside its lookback window has nothing
+  # in scope to underwrite, so they would otherwise leave no row here at all.
+  # Keep them on the no-diagnosis code, carrying the days since their most recent
+  # treatment (a real elapsed count, unlike a fabricated 0, which would read as
+  # "still under treatment"), so the id survives to the final decision.
+  no_scope <- reviewed[!id %in% in_scope$id, .(elp_day = min(elapsed)), by = id]
+  if (nrow(no_scope)) {
+    no_scope[ages, on = .(id), age := i.age]
+    result <- rbind(result, no_scope[, .(id, kcd_main = .KCD_NO_DIAGNOSIS, age,
+                                         hos_day = 0L, sur_cnt = 0L, out_cnt = 0L,
+                                         hos_elp_day = NA_integer_, sur_elp_day = NA_integer_,
+                                         out_elp_day = NA_integer_, elp_day)],
+                    use.names = TRUE)
+  }
   setcolorder(result, c("id", "kcd_main", "age", "hos_day", "sur_cnt", "out_cnt",
                         "hos_elp_day", "sur_elp_day", "out_elp_day", "elp_day"))
   result[]

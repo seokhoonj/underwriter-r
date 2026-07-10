@@ -26,12 +26,17 @@ are \code{YYYYMMDD} strings.}
 A cleansed wide \code{data.table}, one row per (deduplicated) claim line.
 }
 \description{
-One row per claim line: keep rows carrying a diagnosis code, parse the dates,
-reconcile the admission/discharge window through \code{hos_day}, normalize the
-diagnosis codes, pull them leftward (so \code{kcd0} is the main diagnosis), and
-drop exact duplicate rows.
+One row per claim line: parse the dates, reconcile the admission/discharge
+window through \code{hos_day}, normalize the diagnosis codes, pull them leftward
+(so \code{kcd0} is the main diagnosis), and drop exact duplicate rows.
 }
 \details{
+No row is dropped for lacking a diagnosis code. A line that arrived without
+one gets \code{kcd0 = "AAA"} (nothing to underwrite); a line whose every code cell
+failed to parse gets \code{kcd0 = "ZZZ"} (unreadable, routes to review). Both are
+ordinary codes the disease table and rule set decide, so an insured is never
+lost between the raw feed and the final decision.
+
 \code{method} picks which admission/discharge endpoint is trusted and which is
 derived from \code{hos_day}:
 \describe{

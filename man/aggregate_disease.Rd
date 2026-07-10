@@ -28,4 +28,9 @@ returned as \code{elp_day}; simplified-issue questions use other subsets). A lin
 that is both a hospitalization and a surgery feeds both. \code{hos_day} is the
 dedup-union of hospital calendar days (\code{\link[instead:count_stay]{instead::count_stay()}}); \code{sur_cnt} and
 \code{out_cnt} count distinct accident dates.
+
+Every \code{id} in \code{mapped} gets at least one row. An insured whose every diagnosis
+fell outside its lookback window has nothing in scope to underwrite, and is
+carried on the no-diagnosis code \code{"AAA"} with zero counts and the days since
+their most recent treatment.
 }

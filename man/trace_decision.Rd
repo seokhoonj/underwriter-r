@@ -12,9 +12,9 @@ trace_decision(applied, combined, id)
 \item{combined}{A wide combined-decision table from \code{\link[=combine_decision]{combine_decision()}},
 carrying its config-table attributes.}
 
-\item{id}{The single insured id to trace (must be present in \code{combined}). An id
-with no diagnosis in \code{applied} -- an automatic pass recorded by
-\code{\link[=combine_decision]{combine_decision()}}'s \code{pass_ids} -- is traced as a pass on every coverage.}
+\item{id}{The single insured id to trace (must be present in both \code{applied}
+and \code{combined}). An id with nothing to underwrite carries the no-diagnosis
+code in \code{applied}, so it traces like any other.}
 }
 \value{
 A \code{data.table}, one row per coverage, with columns \code{coverage},

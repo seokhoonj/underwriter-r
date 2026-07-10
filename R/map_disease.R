@@ -34,7 +34,7 @@ map_disease <- function(melted, disease_table) {
     melted[unmapped, `:=`(kcd_main = fallback$kcd_main, sub_chk = fallback$sub_chk,
                         lookback_mon = fallback$lookback_mon)]
   }
-  melted[is.na(kcd_main), `:=`(kcd_main = "ZZZ", sub_chk = 1L)]   # lookback_mon stays NA for ZZZ
+  melted[is.na(kcd_main), `:=`(kcd_main = .KCD_UNMAPPED, sub_chk = 1L)]   # lookback_mon stays NA
   melted[, review := as.integer(sub_kcd == 0L | sub_chk == 1L)]
   melted[, tdate := pmax(acc_date, sdate, edate, na.rm = TRUE)]   # most recent treatment date
   melted[, in_lookback := as.integer(tdate >= .minus_months(inq_date, lookback_mon))]

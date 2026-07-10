@@ -9,9 +9,9 @@
 #' @param applied Per-disease decisions from [match_rule()] (`$applied`).
 #' @param combined A wide combined-decision table from [combine_decision()],
 #'   carrying its config-table attributes.
-#' @param id The single insured id to trace (must be present in `combined`). An id
-#'   with no diagnosis in `applied` -- an automatic pass recorded by
-#'   [combine_decision()]'s `pass_ids` -- is traced as a pass on every coverage.
+#' @param id The single insured id to trace (must be present in both `applied`
+#'   and `combined`). An id with nothing to underwrite carries the no-diagnosis
+#'   code in `applied`, so it traces like any other.
 #' @return A `data.table`, one row per coverage, with columns `coverage`,
 #'   `diseases` (the contributing `kcd_main:code` inputs, `" | "`-separated),
 #'   `computed` (the decision recomputed for this id), `stored` (the value in
@@ -30,7 +30,6 @@ trace_decision <- function(applied, combined, id) {
     stop("`combined` has no config attributes; produce `combined` with combine_decision().")
 
   role          <- decision_table$role
-  standard      <- decision_table$code[!is.na(role) & role == "standard"][1L]
   manual_review <- decision_table$code[!is.na(role) & role == "manual_review"][1L]
 
   combined_dt <- as.data.table(combined)[id == key]
@@ -39,14 +38,8 @@ trace_decision <- function(applied, combined, id) {
                  value.name = "stored", variable.factor = FALSE)[, .(coverage, stored)]
 
   applied_one <- as.data.table(applied)[id == key]
-  if (!nrow(applied_one)) {
-    # no diagnosis in `applied`: combine_decision(pass_ids=) recorded this id as
-    # an automatic pass, so every coverage should read standard.
-    out <- stored[, .(coverage, diseases = "(no diagnosis: auto pass)",
-                      computed = standard, stored, ok = stored == standard)]
-    setcolorder(out, c("coverage", "diseases", "computed", "stored", "ok"))
-    return(out[order(coverage)])
-  }
+  if (!nrow(applied_one))   # every insured carries a row, so this means the two disagree
+    stop(sprintf("id %s is in `combined` but absent from `applied`.", format(key)))
 
   # per-disease tokens that fed each coverage; mirror combine's fill so an
   # unmatched disease shows as manual review rather than a blank cell

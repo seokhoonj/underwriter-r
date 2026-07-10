@@ -9,6 +9,12 @@
 #' period per site, over `max_sites` sites declines), `loading` (sum indices, then
 #' band), `reduction` (longest period).
 #'
+#' Every insured reaches here with at least one row in `applied` -- one with
+#' nothing to underwrite arrives on the no-diagnosis code, whose decision the
+#' rule set supplies -- so every id gets a decision and none has to be re-added
+#' afterwards. `nrow(combined)` therefore equals the number of insured in the
+#' claim feed.
+#'
 #' @param applied The per-disease decisions from [match_rule()] (`$applied`).
 #' @param decision_table Decision-code table with columns `code`, `priority`
 #'   (lower = worse), `combiner` (`priority`/`exclusion`/`loading`/`reduction`),
@@ -23,10 +29,6 @@
 #' @param decision_cols Coverage decision columns (default: the `"decision_cols"`
 #'   attribute set by [match_rule()]).
 #' @param max_sites Maximum distinct exclusion sites before a coverage declines.
-#' @param pass_ids Optional ids to record as an automatic pass -- standard on
-#'   every coverage -- even though they have no disease-based decision, e.g.
-#'   applicants whose claims carry no diagnosis code (no disease to restrict on).
-#'   They are appended to the result so downstream summaries count them as auto.
 #' @return A wide `data.table`, one row per `id`, one column per coverage. The
 #'   four supplied tables ride along as attributes (`decision_table`,
 #'   `exclusion_table`, `reduction_table`, `loading_table`), together with
@@ -35,8 +37,7 @@
 #'   [tabulate_decision()] and `plot()` can recover them without re-passing.
 #' @export
 combine_decision <- function(applied, decision_table, exclusion_table, reduction_table, loading_table,
-                             decision_cols = attr(applied, "decision_cols"), max_sites = 4L,
-                             pass_ids = NULL) {
+                             decision_cols = attr(applied, "decision_cols"), max_sites = 4L) {
   priority <- setNames(as.integer(decision_table$priority), decision_table$code)
   combiner <- setNames(decision_table$combiner, decision_table$code)
   letter   <- .decision_letters(decision_table, priority)
@@ -53,15 +54,6 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
   ), use.names = TRUE)
 
   combined <- .pick_worst(results, priority, unique(long[, .(id, coverage)]), letter$standard)
-
-  # applicants with no disease-based decision (e.g. no diagnosis code): standard
-  # on every coverage, so they count as an automatic pass downstream.
-  missing <- setdiff(pass_ids, combined$id)
-  if (length(missing)) {
-    passed <- data.table(id = missing)
-    passed[, (decision_cols) := letter$standard]   # decision_cols, not names(combined): an
-    combined <- rbind(combined, passed, use.names = TRUE, fill = TRUE)   # all-pass run dcasts to id-only
-  }
 
   setattr(combined, "decision_table",  decision_table)
   setattr(combined, "exclusion_table", exclusion_table)

@@ -1,9 +1,14 @@
 #' Cleanse a raw ICIS claim table into a wide master
 #'
-#' One row per claim line: keep rows carrying a diagnosis code, parse the dates,
-#' reconcile the admission/discharge window through `hos_day`, normalize the
-#' diagnosis codes, pull them leftward (so `kcd0` is the main diagnosis), and
-#' drop exact duplicate rows.
+#' One row per claim line: parse the dates, reconcile the admission/discharge
+#' window through `hos_day`, normalize the diagnosis codes, pull them leftward
+#' (so `kcd0` is the main diagnosis), and drop exact duplicate rows.
+#'
+#' No row is dropped for lacking a diagnosis code. A line that arrived without
+#' one gets `kcd0 = "AAA"` (nothing to underwrite); a line whose every code cell
+#' failed to parse gets `kcd0 = "ZZZ"` (unreadable, routes to review). Both are
+#' ordinary codes the disease table and rule set decide, so an insured is never
+#' lost between the raw feed and the final decision.
 #'
 #' `method` picks which admission/discharge endpoint is trusted and which is
 #' derived from `hos_day`:
@@ -36,12 +41,13 @@ clean_icis <- function(dt, kcd_cols = paste0("kcd", 0:4),
   method <- match.arg(method)
   dt <- as.data.table(copy(dt))
 
-  # 1. keep rows carrying at least one diagnosis code
+  # 1. note which rows arrived with a diagnosis code. No row is dropped for it:
+  #    step 4 marks the codeless rows instead, so an insured with no diagnosis
+  #    stays in the feed rather than vanishing and being re-added downstream.
   has_code <- Reduce(`|`, lapply(kcd_cols, function(col) {
     v <- dt[[col]]
     !is.na(v) & nzchar(trimws(v))
   }))
-  dt <- dt[has_code]
 
   # 2. parse dates, set gender, reconcile the admission/discharge window
   .reconcile_window(dt, method)
@@ -54,10 +60,16 @@ clean_icis <- function(dt, kcd_cols = paste0("kcd", 0:4),
   if (any(is_multi)) .redistribute_multi(dt, which(is_multi), kcd_cols)
   dt[, (kcd_cols) := lapply(.SD, normalize_kcd), .SDcols = kcd_cols]
 
-  # 4. pack codes leftward (kcd0 = main), then drop exact duplicate rows (~28% of
-  #    the feed are repeated transmission lines; deduping on the final cleaned
-  #    columns also collapses rows made identical by the reconciliation).
+  # 4. pack codes leftward (kcd0 = main), then mark the rows that ended up with
+  #    no usable code: nothing was recorded (no diagnosis to underwrite) or a
+  #    code was recorded but no cell parsed to the KCD shape (unreadable, so it
+  #    routes to review). Then drop exact duplicate rows (~28% of the feed are
+  #    repeated transmission lines; deduping on the final cleaned columns also
+  #    collapses rows made identical by the reconciliation).
   instead::pack_left(dt, kcd_cols)
+  no_kcd <- Reduce(`&`, lapply(kcd_cols, function(col) is.na(dt[[col]])))
+  set(dt, which(no_kcd & !has_code), "kcd0", .KCD_NO_DIAGNOSIS)
+  set(dt, which(no_kcd &  has_code), "kcd0", .KCD_UNMAPPED)
   dt <- unique(dt)
 
   ord <- c("id", "gender", "age", "inq_date", "pay_date", "acc_date",

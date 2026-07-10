@@ -23,14 +23,9 @@ test_that("combine_decision errors without a manual_review role", {
   )
 })
 
-test_that("combine_decision auto-passes pass_ids not present in applied", {
+test_that("combine_decision decides every id in applied", {
   f <- fixture()
-  combined <- combine_decision(f$applied, f$decision_table, f$exclusion_table,
-                               f$reduction_table, f$loading_table, pass_ids = c("X", "Y"))
-  expect_true(all(c("X", "Y") %in% combined$id))
-  x <- combined[id == "X"]
-  expect_equal(x$cov1, "S")
-  expect_equal(x$cov2, "S")
+  expect_setequal(f$combined$id, unique(f$applied$id))
 })
 
 test_that("tabulate_decision flags auto vs manual review and sums to 1 per coverage", {
@@ -53,15 +48,15 @@ test_that("tabulate_decision handles a logical auto column", {
   expect_equal(as.character(tab[decision == "U", unique(auto)]), "0")
 })
 
-test_that("trace_decision reproduces a normal id and a pass id", {
+test_that("trace_decision reproduces a normal id", {
   f <- fixture()
   tr <- trace_decision(f$applied, f$combined, "A")
   expect_true(all(c("coverage", "diseases", "computed", "stored", "ok") %in% names(tr)))
   expect_true(all(tr$ok))
+})
 
-  combined <- combine_decision(f$applied, f$decision_table, f$exclusion_table,
-                               f$reduction_table, f$loading_table, pass_ids = "Z")
-  trz <- trace_decision(f$applied, combined, "Z")   # pass id absent from applied
-  expect_true(all(trz$ok))
-  expect_true(all(trz$computed == "S"))
+test_that("trace_decision rejects an id that combined has but applied does not", {
+  f <- fixture()
+  combined <- data.table::copy(f$combined)
+  expect_error(trace_decision(f$applied[id != "A"], combined, "A"), "absent from")
 })

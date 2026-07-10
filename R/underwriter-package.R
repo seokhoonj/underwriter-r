@@ -7,6 +7,20 @@
 #' @importFrom utils head
 NULL
 
+# Reserved `kcd_main` values, ordered by leniency: AAA passes, ZZZ reviews.
+#
+# `AAA` marks an insured with nothing to underwrite -- the claim line carried no
+# diagnosis code, or every diagnosis fell outside its lookback window. `ZZZ`
+# marks a diagnosis the disease table does not cover, or a code cell that parsed
+# to nothing.
+#
+# Neither is wired to a decision here. Both are ordinary `kcd_main` values that
+# the rule set decides, so an insured is never dropped from the feed to be
+# re-added later, and a missing rule row routes them to manual review rather
+# than passing them silently.
+.KCD_NO_DIAGNOSIS <- "AAA"
+.KCD_UNMAPPED     <- "ZZZ"
+
 # data.table's non-standard evaluation references column names as bare symbols,
 # which R CMD check would otherwise flag as undefined global variables. Register
 # every column symbol the pipeline uses so the check stays clean.

@@ -11,7 +11,7 @@ test_that("clean_icis(method = 'auto') does not crash on NA hos_day", {
   expect_equal(nrow(out), 2L)
 })
 
-test_that("clean_icis keeps only rows carrying a diagnosis code", {
+test_that("clean_icis keeps a codeless row on the no-diagnosis code", {
   dt <- data.table::data.table(
     id = c("A", "B"), gender = c("1", "1"), age = c(40L, 40L),
     inq_date = "20240301", pay_date = "20240201", acc_date = "20240110",
@@ -19,5 +19,17 @@ test_that("clean_icis keeps only rows carrying a diagnosis code", {
     kcd0 = c("M511", NA), kcd1 = NA_character_, kcd2 = NA, kcd3 = NA, kcd4 = NA
   )
   out <- clean_icis(dt)
-  expect_equal(out$id, "A")   # B has no code -> dropped
+  expect_equal(out$id, c("A", "B"))   # B has no code, but B is not lost
+  expect_equal(out[id == "B", kcd0], "AAA")
+})
+
+test_that("clean_icis marks an unreadable code for review, not as a pass", {
+  dt <- data.table::data.table(
+    id = "C", gender = "1", age = 40L,
+    inq_date = "20240301", pay_date = "20240201", acc_date = "20240110",
+    sdate = "20240115", edate = NA, hos_day = 0L, hos_cnt = 0L, sur_cnt = 0L,
+    kcd0 = "1234", kcd1 = NA_character_, kcd2 = NA, kcd3 = NA, kcd4 = NA
+  )
+  out <- clean_icis(dt)                # a code arrived, but none parses to KCD shape
+  expect_equal(out$kcd0, "ZZZ")        # not "AAA": a parse failure must not auto-pass
 })

@@ -11,8 +11,7 @@ combine_decision(
   reduction_table,
   loading_table,
   decision_cols = attr(applied, "decision_cols"),
-  max_sites = 4L,
-  pass_ids = NULL
+  max_sites = 4L
 )
 }
 \arguments{
@@ -35,11 +34,6 @@ period); the period logic is parsed from the mark itself.}
 attribute set by \code{\link[=match_rule]{match_rule()}}).}
 
 \item{max_sites}{Maximum distinct exclusion sites before a coverage declines.}
-
-\item{pass_ids}{Optional ids to record as an automatic pass -- standard on
-every coverage -- even though they have no disease-based decision, e.g.
-applicants whose claims carry no diagnosis code (no disease to restrict on).
-They are appended to the result so downstream summaries count them as auto.}
 }
 \value{
 A wide \code{data.table}, one row per \code{id}, one column per coverage. The
@@ -58,4 +52,11 @@ instead of \code{R} only edits its table -- the code is unchanged. The four
 combiners are: \code{priority} (worst code wins), \code{exclusion} (union sites, max
 period per site, over \code{max_sites} sites declines), \code{loading} (sum indices, then
 band), \code{reduction} (longest period).
+}
+\details{
+Every insured reaches here with at least one row in \code{applied} -- one with
+nothing to underwrite arrives on the no-diagnosis code, whose decision the
+rule set supplies -- so every id gets a decision and none has to be re-added
+afterwards. \code{nrow(combined)} therefore equals the number of insured in the
+claim feed.
 }
