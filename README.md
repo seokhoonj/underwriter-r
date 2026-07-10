@@ -39,8 +39,8 @@ decision code; the config tables ride along as attributes.
 ## Summaries
 
 ```r
-tabulate_decision(combined)           # decision distribution per coverage
-plot(combined)                        # stacked bar of the composition
+tab <- tabulate_decision(combined)    # decision distribution per coverage
+plot(tab)                             # stacked bar of the composition
 diagnose_icis(raw)                    # data-quality report
 trace_decision(applied, combined, id) # audit one insured's decision
 ```

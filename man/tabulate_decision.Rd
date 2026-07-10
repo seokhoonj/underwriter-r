@@ -15,7 +15,8 @@ column flags each code as auto (\code{1}) or manual review (\code{0}).}
 (default \code{"id"}).}
 }
 \value{
-A long \code{data.table} with columns \code{coverage}, \code{decision}, \code{category}
+A long \code{data.table} of class \code{tabulated_decision} (plottable with
+\code{\link[=plot]{plot()}}) with columns \code{coverage}, \code{decision}, \code{category}
 (the decision's distinct class letters, e.g. \code{"R03(34),R04(34)"} -> \code{"R"},
 \code{"R(99),L(24),E(25)"} -> \code{"E,L,R"}), \code{auto} (a factor with levels \code{0}/\code{1}:
 \code{1} only when every code in the decision is flagged auto, \code{0} when any code

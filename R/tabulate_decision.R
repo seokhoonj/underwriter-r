@@ -13,7 +13,8 @@
 #'   column flags each code as auto (`1`) or manual review (`0`).
 #' @param id_col Name of the id column to exclude from the coverages
 #'   (default `"id"`).
-#' @return A long `data.table` with columns `coverage`, `decision`, `category`
+#' @return A long `data.table` of class `tabulated_decision` (plottable with
+#'   [plot()]) with columns `coverage`, `decision`, `category`
 #'   (the decision's distinct class letters, e.g. `"R03(34),R04(34)"` -> `"R"`,
 #'   `"R(99),L(24),E(25)"` -> `"E,L,R"`), `auto` (a factor with levels `0`/`1`:
 #'   `1` only when every code in the decision is flagged auto, `0` when any code
@@ -49,6 +50,9 @@ tabulate_decision <- function(combined, id_col = "id") {
   out[, prop := n / sum(n), by = coverage]
   setcolorder(out, c("coverage", "decision", "category", "auto", "n", "prop"))
   setorder(out, coverage, -n)
+  # carry the rule-set coverage order so plot()'s order = "column" can read it here
+  setattr(out, "decision_cols", attr(combined, "decision_cols"))
+  setattr(out, "class", c("tabulated_decision", "data.table", "data.frame"))
   out[]
 }
 

@@ -1,7 +1,8 @@
 test_that("plot() dispatches for each result class and returns a ggplot", {
   skip_if_not_installed("ggplot2")
   f <- fixture()
-  expect_s3_class(plot(f$combined), "ggplot")                          # combined_decision
+  tab <- tabulate_decision(f$combined)
+  expect_s3_class(plot(tab), "ggplot")                              # tabulated_decision
   li <- list_rule_impact(f$applied, f$combined)
   expect_s3_class(plot(li, coverage = "cov1"), "ggplot")            # rule_impact_list
   rr <- relax_rule(f$applied, f$combined, "M543")

@@ -1,37 +1,36 @@
 #' Plot the decision composition per coverage
 #'
-#' `plot()` method for a [combine_decision()] result (class `combined_decision`):
-#' a stacked bar of each coverage's decision composition from [tabulate_decision()]
-#' -- by default the auto-decided vs manual-review share -- with each segment's
-#' percentage labelled at its centre.
+#' `plot()` method for a [tabulate_decision()] result (class `tabulated_decision`):
+#' a stacked bar of each coverage's decision composition -- by default the
+#' auto-decided vs manual-review share -- with each segment's percentage labelled
+#' at its centre.
 #'
-#' @param x A [combine_decision()] result (class `combined_decision`).
+#' @param x A [tabulate_decision()] result (class `tabulated_decision`).
 #' @param group Column to stack and colour by: `"auto"` (default) or
 #'   `"category"`.
 #' @param order Coverage order along the x-axis: `"auto_high"` (default, highest
 #'   auto-decided share first), `"auto_low"` (lowest first), or `"column"` (the
 #'   coverage column order defined in the rule set, from the `decision_cols`
-#'   attribute).
+#'   attribute the tabulation carries).
 #' @param min_label Segments whose share is at or below this are left unlabelled,
 #'   to keep thin slivers from cluttering (default `0.03`).
 #' @param title Plot title (default `"Decision composition per coverage"`).
 #' @param ... Unused.
 #' @return A `ggplot` object. When `group = "auto"`, auto-decided (`1`) is blue
 #'   and manual review (`0`) is red.
-#' @seealso [combine_decision()], [tabulate_decision()].
-#' @method plot combined_decision
+#' @seealso [tabulate_decision()], [combine_decision()].
+#' @method plot tabulated_decision
 #' @export
-plot.combined_decision <- function(x, ..., group = c("auto", "category"),
-                                   order = c("auto_high", "auto_low", "column"),
-                                   min_label = 0.03,
-                                   title = "Decision composition per coverage") {
-  combined <- x
-  group    <- match.arg(group)
-  order    <- match.arg(order)
-  tab      <- tabulate_decision(combined)
+plot.tabulated_decision <- function(x, ..., group = c("auto", "category"),
+                                    order = c("auto_high", "auto_low", "column"),
+                                    min_label = 0.03,
+                                    title = "Decision composition per coverage") {
+  tab   <- x
+  group <- match.arg(group)
+  order <- match.arg(order)
 
   coverage_levels <- if (order == "column") {
-    cols <- attr(combined, "decision_cols")
+    cols <- attr(tab, "decision_cols")
     covs <- unique(tab$coverage)
     if (is.null(cols)) sort(covs) else c(intersect(cols, covs), setdiff(covs, cols))
   } else {
