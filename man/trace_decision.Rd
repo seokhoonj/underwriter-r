@@ -10,7 +10,8 @@ trace_decision(applied, combined, id)
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
 
 \item{combined}{A wide combined-decision table from \code{\link[=combine_decision]{combine_decision()}},
-carrying its config-table attributes.}
+carrying its config-table attributes. The recompute reuses them, so it runs
+under exactly the rules that produced the stored decision.}
 
 \item{id}{The single insured id to trace (must be present in both \code{applied}
 and \code{combined}). An id with nothing to underwrite carries the no-diagnosis

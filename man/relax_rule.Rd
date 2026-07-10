@@ -10,7 +10,8 @@ relax_rule(applied, combined, kcd_main, coverage = NULL)
 \item{applied}{Per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
 
 \item{combined}{The baseline wide decision table from \code{\link[=combine_decision]{combine_decision()}},
-carrying its config-table attributes.}
+carrying its config-table attributes. The re-combine reuses them, so the lift
+measures the relaxation alone.}
 
 \item{kcd_main}{One or more patterns matched against \code{kcd_main}, relaxed
 together. A single string is a regex: \code{"M51"} relaxes M51 and any sub-code

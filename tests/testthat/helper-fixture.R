@@ -13,8 +13,10 @@
 # rule of their own (`C`, `M`, hence the `priority` combiner), and the three
 # classes that merge by exclusion / loading / reduction. Used to test how the
 # classes meet each other on one coverage.
-compose_tables <- function(loading_table = data.table::data.table(
-                             decision = c("S", "U", "D"), lower = c(0L, 50L, 201L))) {
+compose_tables <- function(band_table = data.table::data.table(
+                             class    = c("E", "E", "E", "R", "R"),
+                             at_least = c(0L, 50L, 201L, 1L, 5L),
+                             decision = c("S", "U", "D",  "R", "D"))) {
   list(
     decision_table = data.table::data.table(
       priority = c(1L, 2L, 3L, 4L, 5L, 5L, 5L, 6L),
@@ -25,13 +27,24 @@ compose_tables <- function(loading_table = data.table::data.table(
       auto     = c(1L, 0L, 1L, 1L, 1L, 1L, 1L, 1L)),
     exclusion_table = data.table::data.table(mark = c("1i", "3", "99")),
     reduction_table = data.table::data.table(mark = c("3", "99")),
-    loading_table   = loading_table
+    band_table      = band_table
   )
+}
+
+# The default bands with one class's staircase swapped out, so a test can rewrite
+# just the exclusion or just the loading side. The argument is `letter`, not
+# `class`: data.table would read a bare `class` in `i` as the column, not the
+# argument, and quietly drop every row.
+compose_bands <- function(letter, at_least, decision) {
+  keep <- compose_tables()$band_table
+  data.table::rbindlist(list(keep[keep$class != letter],
+                             data.table::data.table(class = letter, at_least = at_least,
+                                                    decision = decision)))
 }
 
 # One insured, one coverage: each element of `codes` is a separate disease's rule
 # decision. Returns that coverage's final decision.
-compose_one <- function(codes, elp_day = 0L, max_sites = 4L, tables = compose_tables()) {
+compose_one <- function(codes, elp_day = 0L, tables = compose_tables()) {
   applied <- data.table::data.table(
     id       = "X",
     kcd_main = paste0("K", seq_along(codes)),
@@ -41,8 +54,7 @@ compose_one <- function(codes, elp_day = 0L, max_sites = 4L, tables = compose_ta
   )
   data.table::setattr(applied, "decision_cols", "cov1")
   combine_decision(applied, tables$decision_table, tables$exclusion_table,
-                   tables$reduction_table, tables$loading_table,
-                   max_sites = max_sites)$cov1
+                   tables$reduction_table, tables$band_table)$cov1
 }
 
 fixture <- function() {
@@ -57,8 +69,10 @@ fixture <- function() {
   )
   exclusion_table <- data.table::data.table(mark = c("5i", "3", "99"))
   reduction_table <- data.table::data.table(mark = c("5i", "3", "99"))
-  loading_table   <- data.table::data.table(lower = c(0L, 25L, 50L),
-                                             decision = c("E(0)", "E(25)", "E(50)"))
+  band_table      <- data.table::data.table(
+    class    = c("E",    "E",     "E",     "R", "R"),
+    at_least = c(0L,     25L,     50L,     1L,  5L),
+    decision = c("E(0)", "E(25)", "E(50)", "R", "D"))
 
   applied <- data.table::data.table(
     id       = c("A", "A", "B", "C", "D", "D"),
@@ -71,10 +85,10 @@ fixture <- function() {
   data.table::setattr(applied, "decision_cols", decision_cols)
 
   combined <- combine_decision(applied, decision_table, exclusion_table,
-                               reduction_table, loading_table)
+                               reduction_table, band_table)
 
   list(applied = applied, combined = combined,
        decision_table = decision_table, exclusion_table = exclusion_table,
-       reduction_table = reduction_table, loading_table = loading_table,
+       reduction_table = reduction_table, band_table = band_table,
        decision_cols = decision_cols)
 }

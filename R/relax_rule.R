@@ -16,7 +16,8 @@
 #'
 #' @param applied Per-disease decisions from [match_rule()] (`$applied`).
 #' @param combined The baseline wide decision table from [combine_decision()],
-#'   carrying its config-table attributes.
+#'   carrying its config-table attributes. The re-combine reuses them, so the lift
+#'   measures the relaxation alone.
 #' @param kcd_main One or more patterns matched against `kcd_main`, relaxed
 #'   together. A single string is a regex: `"M51"` relaxes M51 and any sub-code
 #'   (`M510`, `M512`, ...), and `"^M51$"` relaxes exactly `M51`. A character
@@ -41,7 +42,7 @@ relax_rule <- function(applied, combined, kcd_main, coverage = NULL) {
   decision_table  <- attr(combined, "decision_table")
   exclusion_table <- attr(combined, "exclusion_table")
   reduction_table <- attr(combined, "reduction_table")
-  loading_table   <- attr(combined, "loading_table")
+  band_table      <- attr(combined, "band_table")
   decision_cols   <- attr(applied, "decision_cols")
   if (is.null(decision_table) || is.null(decision_cols))
     stop("`combined` must come from combine_decision() and `applied` from match_rule().")
@@ -66,7 +67,7 @@ relax_rule <- function(applied, combined, kcd_main, coverage = NULL) {
   relaxed[tgt, matched := 1L]
 
   new_combined <- combine_decision(relaxed, decision_table, exclusion_table,
-                                   reduction_table, loading_table, decision_cols = decision_cols)
+                                   reduction_table, band_table, decision_cols = decision_cols)
   relaxed_share <- tabulate_decision(new_combined)[, .(auto_relaxed = sum(prop[auto == "1"])),
                                                    by = coverage]
 

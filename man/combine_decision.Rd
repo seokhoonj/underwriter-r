@@ -9,9 +9,8 @@ combine_decision(
   decision_table,
   exclusion_table,
   reduction_table,
-  loading_table,
-  decision_cols = attr(applied, "decision_cols"),
-  max_sites = 4L
+  band_table,
+  decision_cols = attr(applied, "decision_cols")
 )
 }
 \arguments{
@@ -31,24 +30,26 @@ order the composed codes are written in.}
 \code{mark}s (\code{"5i"} = 5 years minus elapsed, \code{"3"} = 3 years, \code{"99"} = whole
 period); the period logic is parsed from the mark itself.}
 
-\item{loading_table}{Columns \code{lower}, \code{decision}: the summed loading index falls
-in the band starting at \code{lower} and takes that band's \code{decision}. A \code{decision}
-holding the bare loading letter (\code{"E"}) carries the sum back into the code,
-so the band reads \code{E(75)}; any other value substitutes for it, so a band of
-\code{"U"} or \code{"D"} escalates the cell instead of loading it.}
+\item{band_table}{Columns \code{class}, \code{at_least}, \code{decision}. One staircase of
+bands per accumulating class: within a \code{class}, a row claims every amount from
+its \code{at_least} up to the next row's, and the last row runs to infinity. Every
+class the engine accumulates for -- the exclusion and loading codes -- needs at
+least one band, and its first \code{at_least} must be low enough to catch the
+smallest amount that class can produce (\code{0} for a loading, \code{1} for an
+exclusion, which always has a site). A \code{decision} holding the bare class letter
+keeps that class's own output; any other value substitutes for it.}
 
 \item{decision_cols}{Coverage decision columns (default: the \code{"decision_cols"}
 attribute set by \code{\link[=match_rule]{match_rule()}}).}
-
-\item{max_sites}{Maximum distinct exclusion sites before a coverage declines.}
 }
 \value{
 A wide \code{data.table}, one row per \code{id}, one column per coverage. The
 four supplied tables ride along as attributes (\code{decision_table},
-\code{exclusion_table}, \code{reduction_table}, \code{loading_table}), together with
+\code{exclusion_table}, \code{reduction_table}, \code{band_table}), together with
 \code{decision_cols} (the rule-set coverage order, which the \code{id ~ coverage}
 reshape would otherwise sort away), so downstream summaries such as
-\code{\link[=tabulate_decision]{tabulate_decision()}} and \code{plot()} can recover them without re-passing.
+\code{\link[=tabulate_decision]{tabulate_decision()}} and \code{plot()}, and the functions that recombine
+(\code{\link[=trace_decision]{trace_decision()}}, \code{\link[=relax_rule]{relax_rule()}}), can recover them without re-passing.
 }
 \description{
 Collapses the per-disease decisions from \code{\link[=match_rule]{match_rule()}} to one decision per
@@ -60,10 +61,18 @@ instead of \code{R} only edits its table -- the code is unchanged.
 \details{
 Two columns of \code{decision_table} do two different jobs. \code{combiner} says how
 several diseases' codes of \emph{one} class merge into that class's single result:
-\code{exclusion} unions the sites and keeps the longest period per site (over
-\code{max_sites} sites it declines), \code{loading} sums the indices and bands the sum,
-\code{reduction} keeps the longest period, and \code{priority} -- for a class with no
-merge rule of its own -- keeps the worst code.
+\code{exclusion} unions the sites and keeps the longest period per site, \code{loading}
+sums the indices, \code{reduction} keeps the longest period, and \code{priority} -- for a
+class with no merge rule of its own -- keeps the worst code.
+
+Two of those merges leave behind an accumulated amount -- the exclusion's
+distinct site count, the loading's summed index -- and \code{band_table} says what
+each amount decides. Both are read the same way: the band the amount lands in
+either keeps the class's own output, when its \code{decision} is the bare class
+letter, or replaces it with another code. So \code{R} at \code{at_least = 1} keeps the
+exclusion an insured earned, and \code{D} at \code{at_least = 5} declines a coverage once
+the exclusion spans five sites; \code{E} at \code{at_least = 0} writes the loading
+(\code{E(75)}), and \code{U} at \code{at_least = 50} refers it to the underwriter instead.
 
 \code{role} then says how the classes meet each other. The \code{decline} and
 \code{underwriter} codes are terminal: either one stands alone on a cell, suppressing
@@ -72,8 +81,8 @@ identity and drops out. Everything else composes, so an insured can carry an
 exclusion, a loading and a reduction on one coverage at once
 (\code{"E(75),L(36),R03(24),R12(24)"}), written in the decision table's row order.
 Terminality is judged on each combiner's \emph{output}: a summed loading that reaches
-a decline band, or an exclusion spanning too many sites, escalates the whole
-cell even though neither input code was terminal.
+a decline band, or an exclusion whose site count does, escalates the whole cell
+even though neither input code was terminal.
 
 One consequence is worth knowing before writing the table. Every class whose
 \code{combiner} is \code{priority} shares a single bucket, so those classes stay exclusive

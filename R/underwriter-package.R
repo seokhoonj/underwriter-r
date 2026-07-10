@@ -40,8 +40,8 @@ utils::globalVariables(c(
   "no", "matched", "rid", "conflict", "V1",
   # decision combining
   "code", "coverage", "method", "rank", "dec", "token",
-  "area", "mark", "months", "index", "total", "lower", "decision",
-  "class_letter", "has_terminal", "pos",
+  "site", "n_site", "class_output", "mark", "months", "index", "total", "decision",
+  "class", "at_least", "class_letter", "has_terminal", "pos",
   # decision tabulation
   "n", "prop", "category", "auto",
   # decision tracing
