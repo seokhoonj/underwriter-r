@@ -13,6 +13,51 @@ test_that("combine_decision produces the expected per-insured decisions", {
   expect_equal(g("D", "cov2"), "S")   # both standard
 })
 
+test_that("restrictions of different classes compose into one decision", {
+  tables <- compose_tables(data.table::data.table(decision = c("E", "D"), lower = c(0L, 201L)))
+  # exclusion unions the sites, loading sums the indices, reduction keeps the
+  # period; standard drops out; the result is written in decision-table row order
+  expect_equal(compose_one(c("R03(3)", "R12(3)", "E(50)", "E(25)", "L(3)", "S"), tables = tables),
+               "E(75),L(36),R03(36),R12(36)")
+})
+
+test_that("a loading band carries the summed index only when it is the bare letter", {
+  bare    <- compose_tables(data.table::data.table(decision = c("E", "D"), lower = c(0L, 201L)))
+  literal <- compose_tables(data.table::data.table(decision = c("E(0)", "E(50)"), lower = c(0L, 50L)))
+  expect_equal(compose_one(c("E(50)", "E(25)"), tables = bare), "E(75)")
+  expect_equal(compose_one(c("E(50)", "E(25)"), tables = literal), "E(50)")
+})
+
+test_that("decline and underwriter are terminal and suppress every restriction", {
+  expect_equal(compose_one(c("D", "R03(3)", "E(25)")), "D")
+  expect_equal(compose_one(c("U", "R03(3)")), "U")
+  expect_equal(compose_one(c("D", "U", "R03(3)")), "D")   # the worse terminal wins
+})
+
+test_that("standard is the identity and drops out of a composed decision", {
+  expect_equal(compose_one(c("S", "R03(3)")), "R03(36)")
+  expect_equal(compose_one(c("S", "S")), "S")
+})
+
+test_that("terminality is judged on the combiner output, not the input code", {
+  # a summed loading that reaches the underwriter / decline band escalates a cell
+  # holding nothing but restriction codes
+  expect_equal(compose_one(c("E(50)", "E(25)", "R03(3)")), "U")
+  expect_equal(compose_one(c("E(150)", "E(51)", "R03(3)")), "D")
+  # so does an exclusion spanning more sites than max_sites
+  expect_equal(compose_one(c("R03(3)", "R12(3)"), max_sites = 1L), "D")
+})
+
+test_that("an expired exclusion leaves the coverage standard", {
+  expect_equal(compose_one("R01(1i)", elp_day = 400L), "S")   # 1 year, 13 months elapsed
+})
+
+test_that("a priority-merged restriction composes with the merging classes", {
+  expect_equal(compose_one(c("M(3)", "R03(3)")), "M(3),R03(36)")
+  # C and M share the priority combiner, so they stay exclusive of each other
+  expect_equal(compose_one(c("C(1)", "M(3)", "R03(3)")), "C(1),R03(36)")
+})
+
 test_that("combine_decision errors without an underwriter role", {
   f <- fixture()
   dec <- data.table::copy(f$decision_table)

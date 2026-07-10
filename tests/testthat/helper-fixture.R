@@ -8,6 +8,43 @@
 #   C: N50  unmatched -> underwriter everywhere      -> cov1=U (N50 sole),  cov2=U (N50 sole)
 #   D: M543 (cov1=U), M542 (cov1=U)  co-hold cov1      -> cov1=U (two causes -> synergy), cov2=S
 
+# A decision table of the shape a company actually writes: two terminal codes
+# (decline, underwriter), an identity (standard), two restrictions with no merge
+# rule of their own (`C`, `M`, hence the `priority` combiner), and the three
+# classes that merge by exclusion / loading / reduction. Used to test how the
+# classes meet each other on one coverage.
+compose_tables <- function(loading_table = data.table::data.table(
+                             decision = c("S", "U", "D"), lower = c(0L, 50L, 201L))) {
+  list(
+    decision_table = data.table::data.table(
+      priority = c(1L, 2L, 3L, 4L, 5L, 5L, 5L, 6L),
+      code     = c("D", "U", "C", "M", "E", "L", "R", "S"),
+      combiner = c("priority", "priority", "priority", "priority",
+                   "loading", "reduction", "exclusion", "priority"),
+      role     = c("decline", "underwriter", NA, NA, NA, NA, NA, "standard"),
+      auto     = c(1L, 0L, 1L, 1L, 1L, 1L, 1L, 1L)),
+    exclusion_table = data.table::data.table(mark = c("1i", "3", "99")),
+    reduction_table = data.table::data.table(mark = c("3", "99")),
+    loading_table   = loading_table
+  )
+}
+
+# One insured, one coverage: each element of `codes` is a separate disease's rule
+# decision. Returns that coverage's final decision.
+compose_one <- function(codes, elp_day = 0L, max_sites = 4L, tables = compose_tables()) {
+  applied <- data.table::data.table(
+    id       = "X",
+    kcd_main = paste0("K", seq_along(codes)),
+    elp_day  = as.integer(elp_day),
+    matched  = 1L,
+    cov1     = codes
+  )
+  data.table::setattr(applied, "decision_cols", "cov1")
+  combine_decision(applied, tables$decision_table, tables$exclusion_table,
+                   tables$reduction_table, tables$loading_table,
+                   max_sites = max_sites)$cov1
+}
+
 fixture <- function() {
   decision_cols <- c("cov1", "cov2")
 

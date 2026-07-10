@@ -18,17 +18,24 @@ combine_decision(
 \item{applied}{The per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
 
 \item{decision_table}{Decision-code table with columns \code{code}, \code{priority}
-(lower = worse), \code{combiner} (\code{priority}/\code{exclusion}/\code{loading}/\code{reduction}),
+(lower = worse; ranks the two terminal codes and the codes merging by
+\code{priority}, nothing else), \code{combiner}
+(\code{priority}/\code{exclusion}/\code{loading}/\code{reduction}, the within-class merge rule),
 \code{role} (marks the engine-emitted codes: \code{standard}, \code{decline},
 \code{underwriter} -- an \code{underwriter} row is required, since unmatched
 diseases are referred there), and \code{auto} (\code{1}/\code{0}, read by \code{\link[=tabulate_decision]{tabulate_decision()}}
-and \code{plot()} to flag which codes count as automatic).}
+and \code{plot()} to flag which codes count as automatic). Its row order is the
+order the composed codes are written in.}
 
 \item{exclusion_table, reduction_table}{Period-code tables listing the valid
 \code{mark}s (\code{"5i"} = 5 years minus elapsed, \code{"3"} = 3 years, \code{"99"} = whole
 period); the period logic is parsed from the mark itself.}
 
-\item{loading_table}{Columns \code{lower}, \code{decision}.}
+\item{loading_table}{Columns \code{lower}, \code{decision}: the summed loading index falls
+in the band starting at \code{lower} and takes that band's \code{decision}. A \code{decision}
+holding the bare loading letter (\code{"E"}) carries the sum back into the code,
+so the band reads \code{E(75)}; any other value substitutes for it, so a band of
+\code{"U"} or \code{"D"} escalates the cell instead of loading it.}
 
 \item{decision_cols}{Coverage decision columns (default: the \code{"decision_cols"}
 attribute set by \code{\link[=match_rule]{match_rule()}}).}
@@ -48,12 +55,41 @@ Collapses the per-disease decisions from \code{\link[=match_rule]{match_rule()}}
 \verb{(id, coverage)}. Fully table-driven and code-letter agnostic: no decision code
 (\code{R}/\code{E}/\code{L}/\code{S}/\code{D}/\code{U} ...) is hard-wired. \code{decision_table} supplies both the
 class letters and their meaning, so a company that writes exclusion as \code{X}
-instead of \code{R} only edits its table -- the code is unchanged. The four
-combiners are: \code{priority} (worst code wins), \code{exclusion} (union sites, max
-period per site, over \code{max_sites} sites declines), \code{loading} (sum indices, then
-band), \code{reduction} (longest period).
+instead of \code{R} only edits its table -- the code is unchanged.
 }
 \details{
+Two columns of \code{decision_table} do two different jobs. \code{combiner} says how
+several diseases' codes of \emph{one} class merge into that class's single result:
+\code{exclusion} unions the sites and keeps the longest period per site (over
+\code{max_sites} sites it declines), \code{loading} sums the indices and bands the sum,
+\code{reduction} keeps the longest period, and \code{priority} -- for a class with no
+merge rule of its own -- keeps the worst code.
+
+\code{role} then says how the classes meet each other. The \code{decline} and
+\code{underwriter} codes are terminal: either one stands alone on a cell, suppressing
+every restriction, and the worse of the two wins. The \code{standard} code is the
+identity and drops out. Everything else composes, so an insured can carry an
+exclusion, a loading and a reduction on one coverage at once
+(\code{"E(75),L(36),R03(24),R12(24)"}), written in the decision table's row order.
+Terminality is judged on each combiner's \emph{output}: a summed loading that reaches
+a decline band, or an exclusion spanning too many sites, escalates the whole
+cell even though neither input code was terminal.
+
+One consequence is worth knowing before writing the table. Every class whose
+\code{combiner} is \code{priority} shares a single bucket, so those classes stay exclusive
+of \emph{each other} -- a cell holding both \code{C} and \code{M} keeps only the worse of the
+two, and the loser never reaches the composition. That is the right reading when
+the two are genuine alternatives. When two such restrictions must instead sit on
+one cell together, give each its own \code{combiner}, so each contributes a result of
+its own for the composition to pick up.
+
+\code{priority} therefore carries less weight than its name suggests. It orders the
+two terminal codes against each other, and it ranks the codes that merge by
+\code{priority} within their bucket. It does \emph{not} order the composition -- that
+follows the decision table's row order -- and it does not decide which classes
+compose, which is \code{role}'s job. Codes that compose may share a priority number
+freely; doing so states that none of them dominates the others.
+
 Every insured reaches here with at least one row in \code{applied} -- one with
 nothing to underwrite arrives on the no-diagnosis code, whose decision the
 rule set supplies -- so every id gets a decision and none has to be re-added

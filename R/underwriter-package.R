@@ -41,6 +41,7 @@ utils::globalVariables(c(
   # decision combining
   "code", "coverage", "method", "rank", "dec", "token",
   "area", "mark", "months", "index", "total", "lower", "decision",
+  "class_letter", "has_terminal", "pos",
   # decision tabulation
   "n", "prop", "category", "auto",
   # decision tracing
