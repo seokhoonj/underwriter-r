@@ -3,8 +3,8 @@
 #' Collapses the long, mapped table to one row per `(id, kcd_main)` with the
 #' inputs a rule set bands on. Reviewed rows only (`review == 1`). Counts use a
 #' fixed 5-year window; elapsed days use each disease's lookback window (with the
-#' 5-year window as the fallback for unmapped `"ZZZ"` codes, which are kept so
-#' they can be referred to the underwriter).
+#' 5-year window as the fallback for the `"IRREGULAR"` and `"UNMAPPED"` codes, which
+#' have no lookback of their own and are kept so they can be referred).
 #'
 #' Elapsed days are computed per treatment type -- `hos_elp_day` (hospitalization),
 #' `sur_elp_day` (surgery), `out_elp_day` (outpatient) -- because products combine
@@ -15,9 +15,9 @@
 #' `out_cnt` count distinct accident dates.
 #'
 #' Every `id` in `mapped` gets at least one row. An insured whose every diagnosis
-#' fell outside its lookback window has nothing in scope to underwrite, and is
-#' carried on the no-diagnosis code `"AAA"` with zero counts and the days since
-#' their most recent treatment.
+#' fell outside its lookback window, and who has no codeless (`"VACANT"`) line to
+#' survive on, is carried on the `"EXPIRED"` code with zero counts and the days since
+#' their most recent treatment, so the id survives to the final decision.
 #'
 #' @param mapped A long, mapped table from [map_disease()].
 #' @return A `data.table`, one row per `(id, kcd_main)`, with `age`, `hos_day`,
@@ -30,15 +30,17 @@ aggregate_disease <- function(mapped) {
   # hospitalized) means "current", i.e. 0 days elapsed -- never negative.
   reviewed[, elapsed := pmax(0L, as.integer(inq_date - pmax(acc_date, sdate, edate, na.rm = TRUE)))]
 
-  # (id, kcd_main) universe: within the disease lookback window; for ZZZ (no
-  # lookback) fall back to the 5-year window.
-  in_scope <- reviewed[in_lookback == 1L | (kcd_main == .KCD_UNMAPPED & in_5yr == 1L)]
+  # (id, kcd_main) universe: within the disease lookback window. IRREGULAR and
+  # UNMAPPED have no lookback of their own, so they fall back to the 5-year window;
+  # VACANT was pinned in-window by map_disease() so a codeless-only insured survives.
+  no_window <- c(.KCD_IRREGULAR, .KCD_UNMAPPED)
+  in_scope  <- reviewed[in_lookback == 1L | (kcd_main %chin% no_window & in_5yr == 1L)]
 
-  # a codeless claim line marks the line, not the insured: someone with any real
-  # diagnosis in scope has something to underwrite, so their codeless lines add
-  # nothing. Keep the no-diagnosis code only where it is the whole story.
-  underwritable <- unique(in_scope[kcd_main != .KCD_NO_DIAGNOSIS, id])
-  in_scope      <- in_scope[kcd_main != .KCD_NO_DIAGNOSIS | !id %in% underwritable]
+  # a codeless (VACANT) line marks the line, not the insured: someone with any real
+  # diagnosis in scope has something to underwrite, so their VACANT lines add nothing.
+  # Keep VACANT only where it is the whole story.
+  underwritable <- unique(in_scope[kcd_main != .KCD_VACANT, id])
+  in_scope      <- in_scope[kcd_main != .KCD_VACANT | !id %in% underwritable]
   id_disease    <- unique(in_scope[, .(id, kcd_main)])
 
   # per-treatment-type elapsed days, each the most recent (min) within scope
@@ -68,16 +70,34 @@ aggregate_disease <- function(mapped) {
   ages <- reviewed[, .(age = max(as.integer(age))), by = id]
   result[ages, on = .(id), age := i.age]
 
-  # an insured whose every diagnosis fell outside its lookback window has nothing
-  # in scope to underwrite, so they would otherwise leave no row here at all.
-  # Keep them on the no-diagnosis code, carrying the days since their most recent
-  # treatment (a real elapsed count, unlike a fabricated 0, which would read as
-  # "still under treatment"), so the id survives to the final decision.
+  # an insured all of whose diagnoses aged out has nothing in scope AND, unlike a
+  # codeless insured, no VACANT line to survive on -- their expired diagnoses are not
+  # kept (they would wrongly match their old rules and draw an exclusion or decline).
+  # So they would leave no row at all. Give them one EXPIRED placeholder to keep the
+  # id: it always resolves to standard, so its counts feed no rule and are 0, but
+  # `elp_day` carries the days since their most recent treatment (a real figure, not a
+  # fabricated 0 that would read as "still under treatment").
+  #
+  # How several expired diagnoses collapse to ONE row: those rows never entered
+  # `id_disease` (it is built from in_scope, which they failed), so `result` has none
+  # of them. Here `by = id` folds an insured's many expired lines -- M51, M54, K40,
+  # each a different kcd_main -- into a single group, and the original codes are then
+  # dropped and replaced wholesale by `.KCD_EXPIRED`. There is no merge of kcd_main
+  # values; the fold is `by = id`, and the per-disease detail is gone from here on
+  # (diagnose_icis() reports it instead).
+  #
+  # `elp_day` is `min(elapsed)` -- the SAME definition every other row uses, days
+  # since the most recent treatment of any kind -- so the EXPIRED row is not a special
+  # case. Note this is the most recent TREATMENT, not the most recent EXPIRY: a
+  # short-lookback diagnosis can expire while still being the person's latest visit,
+  # so a small `elp_day` here does NOT mean "barely expired". This one number cannot
+  # explain why several diagnoses each aged out; diagnose_icis()'s scope section tells
+  # that story (which diagnoses, out of which windows).
   outside  <- reviewed[!id %in% in_scope$id]
   no_scope <- if (nrow(outside)) outside[, .(elp_day = min(elapsed)), by = id] else outside[0L, .(id)]
   if (nrow(no_scope)) {
     no_scope[ages, on = .(id), age := i.age]
-    result <- rbind(result, no_scope[, .(id, kcd_main = .KCD_NO_DIAGNOSIS, age,
+    result <- rbind(result, no_scope[, .(id, kcd_main = .KCD_EXPIRED, age,
                                          hos_day = 0L, sur_cnt = 0L, out_cnt = 0L,
                                          hos_elp_day = NA_integer_, sur_elp_day = NA_integer_,
                                          out_elp_day = NA_integer_, elp_day)],

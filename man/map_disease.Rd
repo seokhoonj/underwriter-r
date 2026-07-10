@@ -10,8 +10,8 @@ map_disease(melted, disease_table)
 \item{melted}{A melted table from \code{\link[=melt_kcd]{melt_kcd()}}.}
 
 \item{disease_table}{A lookup table with columns \code{kcd}, \code{kcd_main}, \code{sub_chk},
-\code{lookback_mon}. It needs no rows for the reserved codes \code{"AAA"} and \code{"ZZZ"};
-any it does carry are ignored.}
+\code{lookback_mon}. It needs no rows for the reserved codes \code{"VACANT"} and
+\code{"IRREGULAR"}; any it does carry are ignored.}
 }
 \value{
 \code{melted} with \code{kcd_main}, \code{sub_chk}, \code{lookback_mon}, \code{review},
@@ -21,16 +21,17 @@ any it does carry are ignored.}
 Joins each \code{kcd} to \code{disease_table} to attach the representative disease
 (\code{kcd_main}), the sub-diagnosis review flag (\code{sub_chk}), and the lookback
 window in months (\code{lookback_mon}): exact match first, then a 3-character
-fallback, then \code{"ZZZ"} for the still-unmapped (kept, never dropped, so they
-can be referred to the underwriter).
+fallback, then \code{"UNMAPPED"} for a still-unmatched valid code (kept, never
+dropped, so it can be referred to the underwriter).
 }
 \details{
-The two reserved codes \code{\link[=clean_icis]{clean_icis()}} writes are not diagnoses and are not
-looked up: \code{"AAA"} (nothing to underwrite) and \code{"ZZZ"} (unreadable) carry
-through as their own \code{kcd_main}, whatever \code{disease_table} holds. \code{"AAA"} is
-always in its lookback window, since nothing was diagnosed that could age out
-of one. So the guarantee that an insured never disappears lives in this code,
-not in a row someone has to remember to write.
+The reserved codes \code{\link[=clean_icis]{clean_icis()}} writes are not diagnoses and are not looked
+up: \code{"VACANT"} (empty cells) and \code{"IRREGULAR"} (unreadable) carry through as
+their own \code{kcd_main}, whatever \code{disease_table} holds. \code{"VACANT"} is always in
+its lookback window, since nothing was diagnosed that could age out of one, so
+an insured whose only lines are empty survives on it. The guarantee that an
+insured never disappears lives in this code, not in a row someone has to
+remember to write.
 
 Adds:
 \describe{
@@ -38,10 +39,11 @@ Adds:
 always, a sub-diagnosis only when its code is flagged \code{sub_chk == 1}.}
 \item{\code{in_lookback}}{\code{1} when the most recent treatment date is within the
 disease's per-disease window (\code{lookback_mon} months). Always \code{1} for
-\code{"AAA"} (no diagnosis, so nothing to age out) and \code{NA} for \code{"ZZZ"} (no
-lookback defined). Scopes the elapsed-days aggregation.}
+\code{"VACANT"} (no diagnosis, so nothing to age out) and \code{NA} for the reviewed
+sentinels \code{"IRREGULAR"}/\code{"UNMAPPED"} (no lookback defined; the fixed 5-year
+window scopes them). Scopes the elapsed-days aggregation.}
 \item{\code{in_5yr}}{\code{1} when within a fixed 60-month window. Universal, so it is
-defined for every row (a >5-year treatment is \code{0}, not \code{NA}), including
-\code{"ZZZ"}. Scopes the counts.}
+defined for every row (a >5-year treatment is \code{0}, not \code{NA}). Scopes the
+counts.}
 }
 }

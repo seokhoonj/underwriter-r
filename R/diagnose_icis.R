@@ -189,19 +189,25 @@ diagnose_icis <- function(dt, verbose = TRUE) {
 
   # --- scope (only on a mapped table, which carries the lookback flags) ------
   # the windows come from the disease table, so a claim-level feed cannot show
-  # which diagnoses aged out of them. An insured every window excludes has
-  # nothing to underwrite and lands on the no-diagnosis code -- a population no
-  # other section can see.
+  # which diagnoses aged out of them. An insured every window excludes has nothing
+  # to underwrite and survives on a sentinel (VACANT if they only ever had empty
+  # cells, EXPIRED if their diagnoses all aged out) -- a population no other section
+  # can see. This is the only place the never-coded / aged-out split is reported,
+  # since aggregate_disease() folds both away.
   scope <- NULL
   if (all(c("kcd_main", "review", "in_lookback", "in_5yr") %in% names(dt))) {
-    coded    <- dt$kcd_main != .KCD_NO_DIAGNOSIS
+    # "coded" = the line held some content; only VACANT (empty cells) is uncoded.
+    # IRREGULAR and UNMAPPED had something written, and have no lookback of their own,
+    # so like the map_disease() scope they fall back to the 5-year window.
+    coded    <- dt$kcd_main != .KCD_VACANT
     reviewed <- dt$review == 1L
-    windowed <- dt$in_lookback == 1L | (dt$kcd_main == .KCD_UNMAPPED & dt$in_5yr == 1L)
+    windowed <- dt$in_lookback == 1L |
+                (dt$kcd_main %chin% c(.KCD_IRREGULAR, .KCD_UNMAPPED) & dt$in_5yr == 1L)
     windowed[is.na(windowed)] <- FALSE
     underwritable <- reviewed & coded & windowed
 
     no_scope    <- setdiff(id, id[underwritable])   # nothing left to underwrite
-    never_coded <- setdiff(id, id[coded])           # no diagnosis was ever recorded
+    never_coded <- setdiff(id, id[coded])           # only empty cells, no content ever
     scope <- list(
       not_reviewed      = .count_mask(!reviewed),
       out_of_window     = .count_mask(reviewed & coded & !windowed),
@@ -318,9 +324,9 @@ diagnose_icis <- function(dt, verbose = TRUE) {
     .header("scope (which diagnoses the lookback windows admit)")
     .counts("not reviewed", sc$not_reviewed)
     .counts("reviewed but out of window", sc$out_of_window)
-    .icount("ids with nothing in scope", sc$no_scope_ids, "-> no-diagnosis code")
-    .icount("  no diagnosis ever recorded", sc$never_coded_ids)
-    .icount("  every diagnosis aged out", sc$aged_out_ids)
+    .icount("ids with nothing in scope", sc$no_scope_ids)
+    .icount("  no diagnosis ever recorded", sc$never_coded_ids, "-> VACANT")
+    .icount("  every diagnosis aged out", sc$aged_out_ids, "-> EXPIRED")
   }
 }
 

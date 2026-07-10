@@ -17,8 +17,8 @@ A \code{data.table}, one row per \verb{(id, kcd_main)}, with \code{age}, \code{h
 Collapses the long, mapped table to one row per \verb{(id, kcd_main)} with the
 inputs a rule set bands on. Reviewed rows only (\code{review == 1}). Counts use a
 fixed 5-year window; elapsed days use each disease's lookback window (with the
-5-year window as the fallback for unmapped \code{"ZZZ"} codes, which are kept so
-they can be referred to the underwriter).
+5-year window as the fallback for the \code{"IRREGULAR"} and \code{"UNMAPPED"} codes, which
+have no lookback of their own and are kept so they can be referred).
 }
 \details{
 Elapsed days are computed per treatment type -- \code{hos_elp_day} (hospitalization),
@@ -30,7 +30,7 @@ dedup-union of hospital calendar days (\code{\link[instead:count_stay]{instead::
 \code{out_cnt} count distinct accident dates.
 
 Every \code{id} in \code{mapped} gets at least one row. An insured whose every diagnosis
-fell outside its lookback window has nothing in scope to underwrite, and is
-carried on the no-diagnosis code \code{"AAA"} with zero counts and the days since
-their most recent treatment.
+fell outside its lookback window, and who has no codeless (\code{"VACANT"}) line to
+survive on, is carried on the \code{"EXPIRED"} code with zero counts and the days since
+their most recent treatment, so the id survives to the final decision.
 }
