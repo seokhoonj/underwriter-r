@@ -15,9 +15,12 @@
 #'   code in `applied`, so it traces like any other.
 #' @return A `data.table`, one row per coverage, with columns `coverage`,
 #'   `diseases` (the contributing `kcd_main:code` inputs, `" | "`-separated),
-#'   `computed` (the decision recomputed for this id), `stored` (the value in
-#'   `combined`), and `ok` (`computed == stored`). A coverage present on only one
-#'   side surfaces as a row with `ok = FALSE`.
+#'   `unresolved` (any of those codes the config tables cannot read, with the reason;
+#'   empty when they all read cleanly, and the reason a coverage carrying a plain
+#'   restriction can still come out as a referral), `computed` (the decision
+#'   recomputed for this id), `stored` (the value in `combined`), and `ok`
+#'   (`computed == stored`). A coverage present on only one side surfaces as a row
+#'   with `ok = FALSE`.
 #' @seealso [combine_decision()], [tabulate_decision()].
 #' @export
 trace_decision <- function(applied, combined, id) {
@@ -49,7 +52,18 @@ trace_decision <- function(applied, combined, id) {
   inputs <- melt(filled, id.vars = "kcd_main", measure.vars = decision_cols,
                  variable.name = "coverage", value.name = "code", variable.factor = FALSE)
   inputs <- inputs[!is.na(code) & nzchar(code)]
-  per_cov <- inputs[, .(diseases = paste(sprintf("%s:%s", kcd_main, code), collapse = " | ")),
+
+  # a coverage referred because one of its codes could not be read says so here,
+  # rather than leaving the reader to wonder why an insured with a plain exclusion
+  # came out as a referral
+  combiner   <- setNames(decision_table$combiner, decision_table$code)
+  unreadable <- .unresolvable(unique(inputs$code), decision_table, combiner,
+                              exclusion_table, reduction_table)
+  inputs[, reason := NA_character_]
+  if (nrow(unreadable)) inputs[unreadable, on = .(code), reason := i.reason]
+  per_cov <- inputs[, .(diseases   = paste(sprintf("%s:%s", kcd_main, code), collapse = " | "),
+                        unresolved = paste(unique(sprintf("%s: %s", code, reason)[!is.na(reason)]),
+                                           collapse = " | ")),
                     by = coverage]
 
   # recompute this id's decision and compare to the stored one
@@ -62,7 +76,7 @@ trace_decision <- function(applied, combined, id) {
   out <- merge(computed, stored, by = "coverage", all = TRUE)
   out <- merge(out, per_cov, by = "coverage", all.x = TRUE)
   out[, ok := !is.na(computed) & !is.na(stored) & computed == stored]
-  setcolorder(out, c("coverage", "diseases", "computed", "stored", "ok"))
+  setcolorder(out, c("coverage", "diseases", "unresolved", "computed", "stored", "ok"))
   setorder(out, coverage)
   out[]
 }

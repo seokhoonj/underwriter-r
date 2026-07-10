@@ -90,6 +90,97 @@ test_that("a priority-merged restriction composes with the merging classes", {
   expect_equal(compose_one(c("C(1)", "M(3)", "R03(3)")), "C(1),R03(36)")
 })
 
+test_that("a code whose class letter the decision table does not know is referred", {
+  # the rule set carried a lowercase "s" where the standard code is "S". It used to
+  # fall through to the priority combiner and compose into the decision verbatim.
+  expect_warning(dec <- compose_one(c("s", "R03(3)")), "class letter \"s\"")
+  expect_equal(dec, "U")
+})
+
+test_that("a code the config tables cannot read refers its coverage", {
+  # `1i` and `3` are the only exclusion marks the fixture defines, `3` the only
+  # reduction mark, and an exclusion token must name a site
+  expect_warning(expect_equal(compose_one("R01(7)"),   "U"), "mark \"7\" is not in exclusion_table")
+  expect_warning(expect_equal(compose_one("L(99)"),    "U"), "mark \"99\" is not in reduction_table")
+  expect_warning(expect_equal(compose_one("R(99)"),    "U"), "is not of the form R<site>\\(<mark>\\)")
+  expect_warning(expect_equal(compose_one("E(bad)"),   "U"), "does not carry a numeric index")
+  # an unreadable code suppresses the readable restrictions on its cell rather than
+  # dropping itself and quietly under-restricting the insured
+  expect_warning(expect_equal(compose_one(c("R01(7)", "R03(3)", "E(25)")), "U"), "exclusion_table")
+})
+
+test_that("an expired restriction is standard, an unreadable one is referred", {
+  expect_silent(expect_equal(compose_one("R01(1i)", elp_day = 400L), "S"))   # ran out
+  expect_warning(expect_equal(compose_one("R01(7)"), "U"))                   # cannot be read
+})
+
+test_that("a payload the priority combiner carries has no syntax to fail", {
+  tables <- compose_tables()
+  expect_silent(dec <- compose_one(c("M(any text at all)", "R03(3)"), tables = tables))
+  expect_equal(dec, "M(any text at all),R03(36)")
+})
+
+test_that("combine_decision reports every unreadable code with the rule that wrote it", {
+  tables <- compose_tables()
+  applied <- data.table::data.table(
+    id       = c("A", "A", "B"),
+    kcd_main = c("M51", "M54", "A08"),
+    no       = c(412L, 809L, 69L),
+    elp_day  = 0L, matched = 1L,
+    cov1     = c("L(99)", "R03(3)", "s"))
+  data.table::setattr(applied, "decision_cols", "cov1")
+  suppressWarnings(
+    combined <- combine_decision(applied, tables$decision_table, tables$exclusion_table,
+                                 tables$reduction_table, tables$band_table))
+  report <- attr(combined, "unresolved")
+  expect_equal(nrow(report), 2L)
+  expect_setequal(report$code, c("L(99)", "s"))
+  expect_equal(report[code == "s", rule_no], "69")        # points at the rule row to fix
+  expect_equal(report[code == "s", kcd_main], "A08")
+  expect_equal(report[code == "L(99)", n_cell], 1L)
+  expect_equal(combined[id == "A", cov1], "U")            # R03(3) was readable, L(99) was not
+  expect_equal(combined[id == "B", cov1], "U")
+
+  # a clean rule set attaches no report and warns about nothing
+  clean <- data.table::copy(applied)[, cov1 := c("L(3)", "R03(3)", "S")]
+  data.table::setattr(clean, "decision_cols", "cov1")
+  expect_silent(
+    ok <- combine_decision(clean, tables$decision_table, tables$exclusion_table,
+                           tables$reduction_table, tables$band_table))
+  expect_null(attr(ok, "unresolved"))
+})
+
+test_that("trace_decision names the code that referred a coverage", {
+  tables <- compose_tables()
+  applied <- data.table::data.table(id = "A", kcd_main = c("M51", "M54"), no = c(412L, 809L),
+                                    elp_day = 0L, matched = 1L, cov1 = c("L(99)", "R03(3)"))
+  data.table::setattr(applied, "decision_cols", "cov1")
+  suppressWarnings({
+    combined <- combine_decision(applied, tables$decision_table, tables$exclusion_table,
+                                 tables$reduction_table, tables$band_table)
+    tr <- trace_decision(applied, combined, "A")
+  })
+  expect_true(all(tr$ok))
+  expect_match(tr$unresolved, "L\\(99\\): mark \"99\" is not in reduction_table")
+})
+
+test_that("combine_decision rejects a decision table it cannot read", {
+  tables <- compose_tables()
+  applied <- data.table::data.table(id = "X", kcd_main = "K1", elp_day = 0L,
+                                    matched = 1L, cov1 = "S")
+  data.table::setattr(applied, "decision_cols", "cov1")
+  combine <- function(dec) combine_decision(applied, dec, tables$exclusion_table,
+                                            tables$reduction_table, tables$band_table)
+  wide <- data.table::copy(tables$decision_table)[code == "R", code := "RR"]
+  expect_error(combine(wide), "must be one character")
+  meta <- data.table::copy(tables$decision_table)[code == "R", code := "."]
+  expect_error(combine(meta), "metacharacter")
+  dup <- data.table::copy(tables$decision_table)[code == "C", code := "M"]
+  expect_error(combine(dup), "duplicate codes")
+  typo <- data.table::copy(tables$decision_table)[code == "R", combiner := "exclusions"]
+  expect_error(combine(typo), "combiners must be one of")
+})
+
 test_that("combine_decision errors without an underwriter role", {
   f <- fixture()
   dec <- data.table::copy(f$decision_table)

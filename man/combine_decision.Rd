@@ -50,6 +50,9 @@ four supplied tables ride along as attributes (\code{decision_table},
 reshape would otherwise sort away), so downstream summaries such as
 \code{\link[=tabulate_decision]{tabulate_decision()}} and \code{plot()}, and the functions that recombine
 (\code{\link[=trace_decision]{trace_decision()}}, \code{\link[=relax_rule]{relax_rule()}}), can recover them without re-passing.
+The \code{"unresolved"} attribute holds one row per unreadable decision code --
+\code{code}, \code{reason}, the \code{rule_no} and \code{kcd_main} that wrote it, and the \code{n_id} /
+\code{n_cell} it reached -- or \code{NULL} when every code read cleanly.
 }
 \description{
 Collapses the per-disease decisions from \code{\link[=match_rule]{match_rule()}} to one decision per
@@ -98,6 +101,16 @@ two terminal codes against each other, and it ranks the codes that merge by
 follows the decision table's row order -- and it does not decide which classes
 compose, which is \code{role}'s job. Codes that compose may share a priority number
 freely; doing so states that none of them dominates the others.
+
+A decision code nothing can read -- a class letter absent from \code{decision_table}, a
+malformed exclusion token, a period mark absent from its table, a loading with no
+numeric index -- refers its coverage to the underwriter, and never quietly stands
+the coverage instead. Expiry and unreadability look alike once a code has been
+dropped, so the whole code vocabulary is judged before any merging: an exclusion
+that ran out leaves the coverage standard, while one nobody can read escalates it.
+Every such code is counted in the \code{"unresolved"} attribute and reported in a single
+warning naming the rule rows that wrote it, so a rule-set typo surfaces instead of
+turning into a silent automatic acceptance.
 
 Every insured reaches here with at least one row in \code{applied} -- one with
 nothing to underwrite arrives on the no-diagnosis code, whose decision the

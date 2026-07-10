@@ -20,9 +20,12 @@ code in \code{applied}, so it traces like any other.}
 \value{
 A \code{data.table}, one row per coverage, with columns \code{coverage},
 \code{diseases} (the contributing \code{kcd_main:code} inputs, \code{" | "}-separated),
-\code{computed} (the decision recomputed for this id), \code{stored} (the value in
-\code{combined}), and \code{ok} (\code{computed == stored}). A coverage present on only one
-side surfaces as a row with \code{ok = FALSE}.
+\code{unresolved} (any of those codes the config tables cannot read, with the reason;
+empty when they all read cleanly, and the reason a coverage carrying a plain
+restriction can still come out as a referral), \code{computed} (the decision
+recomputed for this id), \code{stored} (the value in \code{combined}), and \code{ok}
+(\code{computed == stored}). A coverage present on only one side surfaces as a row
+with \code{ok = FALSE}.
 }
 \description{
 For a single \code{id}, shows how each coverage's final decision was built from the

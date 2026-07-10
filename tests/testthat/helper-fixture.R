@@ -25,8 +25,10 @@ compose_tables <- function(band_table = data.table::data.table(
                    "loading", "reduction", "exclusion", "priority"),
       role     = c("decline", "underwriter", NA, NA, NA, NA, NA, "standard"),
       auto     = c(1L, 0L, 1L, 1L, 1L, 1L, 1L, 1L)),
+    # "99" (the whole policy period) is an exclusion concept only, as in a real rule
+    # set: a reduction runs for a term, it does not run forever
     exclusion_table = data.table::data.table(mark = c("1i", "3", "99")),
-    reduction_table = data.table::data.table(mark = c("3", "99")),
+    reduction_table = data.table::data.table(mark = c("1i", "3")),
     band_table      = band_table
   )
 }

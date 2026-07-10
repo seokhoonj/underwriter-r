@@ -42,6 +42,7 @@ utils::globalVariables(c(
   "code", "coverage", "method", "rank", "dec", "token",
   "site", "n_site", "class_output", "mark", "months", "index", "total", "decision",
   "class", "at_least", "class_letter", "has_terminal", "pos",
+  "reason", "i.reason", "n_cell", "rule_no", "i.rule_no", "i.kcd_main",
   # decision tabulation
   "n", "prop", "category", "auto",
   # decision tracing

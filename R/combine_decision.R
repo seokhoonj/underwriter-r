@@ -46,6 +46,16 @@
 #' compose, which is `role`'s job. Codes that compose may share a priority number
 #' freely; doing so states that none of them dominates the others.
 #'
+#' A decision code nothing can read -- a class letter absent from `decision_table`, a
+#' malformed exclusion token, a period mark absent from its table, a loading with no
+#' numeric index -- refers its coverage to the underwriter, and never quietly stands
+#' the coverage instead. Expiry and unreadability look alike once a code has been
+#' dropped, so the whole code vocabulary is judged before any merging: an exclusion
+#' that ran out leaves the coverage standard, while one nobody can read escalates it.
+#' Every such code is counted in the `"unresolved"` attribute and reported in a single
+#' warning naming the rule rows that wrote it, so a rule-set typo surfaces instead of
+#' turning into a silent automatic acceptance.
+#'
 #' Every insured reaches here with at least one row in `applied` -- one with
 #' nothing to underwrite arrives on the no-diagnosis code, whose decision the
 #' rule set supplies -- so every id gets a decision and none has to be re-added
@@ -82,9 +92,13 @@
 #'   reshape would otherwise sort away), so downstream summaries such as
 #'   [tabulate_decision()] and `plot()`, and the functions that recombine
 #'   ([trace_decision()], [relax_rule()]), can recover them without re-passing.
+#'   The `"unresolved"` attribute holds one row per unreadable decision code --
+#'   `code`, `reason`, the `rule_no` and `kcd_main` that wrote it, and the `n_id` /
+#'   `n_cell` it reached -- or `NULL` when every code read cleanly.
 #' @export
 combine_decision <- function(applied, decision_table, exclusion_table, reduction_table, band_table,
                              decision_cols = attr(applied, "decision_cols")) {
+  .check_decision_table(decision_table)
   priority <- setNames(as.integer(decision_table$priority), decision_table$code)
   combiner <- setNames(decision_table$combiner, decision_table$code)
   letter   <- .decision_letters(decision_table, priority)
@@ -95,22 +109,76 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 
   long <- .melt_decisions(applied, decision_cols, combiner, letter$underwriter)
 
+  # judge the whole code vocabulary once, then keep the unreadable ones away from the
+  # combiners: their cells are referred, and the underwriter code being terminal
+  # suppresses whatever else those cells carried.
+  unreadable <- .unresolvable(unique(long$code), decision_table, combiner,
+                              exclusion_table, reduction_table)
+  long[, reason := NA_character_]
+  if (nrow(unreadable)) long[unreadable, on = .(code), reason := i.reason]
+  referred <- long[!is.na(reason)]
+  readable <- long[ is.na(reason)]
+
   results <- rbindlist(list(
-    .combine_priority( long[method == "priority"] , priority),
-    .combine_exclusion(long[method == "exclusion"], exclusion_table, exclusion_band, letter$exclusion),
-    .combine_loading(  long[method == "loading"]  , loading_band   , letter$loading),
-    .combine_reduction(long[method == "reduction"], reduction_table, letter$reduction)
+    unique(referred[, .(id, coverage)])[, dec := letter$underwriter],
+    .combine_priority( readable[method == "priority"] , priority),
+    .combine_exclusion(readable[method == "exclusion"], exclusion_table, exclusion_band, letter$exclusion),
+    .combine_loading(  readable[method == "loading"]  , loading_band   , letter$loading),
+    .combine_reduction(readable[method == "reduction"], reduction_table, letter$reduction)
   ), use.names = TRUE)
 
   combined <- .compose_decision(results, letter, priority, unique(long[, .(id, coverage)]))
 
+  report <- if (nrow(referred)) .unresolved_report(referred) else NULL
   setattr(combined, "decision_table",  decision_table)
   setattr(combined, "exclusion_table", exclusion_table)
   setattr(combined, "reduction_table", reduction_table)
   setattr(combined, "band_table",      band_table)
   setattr(combined, "decision_cols",   decision_cols)   # rule-set coverage order, for plot()
+  setattr(combined, "unresolved",      report)          # NULL when every code read cleanly
   setattr(combined, "class", c("combined_decision", "data.table", "data.frame"))
+  if (!is.null(report)) .warn_unresolved(report)
   combined
+}
+
+# One row per unresolvable code: why it failed, which rules wrote it, which diseases
+# carried it, and how far it reached. `no` and `kcd_main` are there only when
+# `applied` came from match_rule(); without them the report still names the code and
+# the reason, it just cannot point at the rule row to fix.
+.unresolved_report <- function(referred) {
+  report <- referred[, .(n_id = uniqueN(id), n_cell = .N), by = .(code, reason)]
+  if ("no" %in% names(referred))
+    report[referred[, .(rule_no = .abbreviate(unique(no))), by = code], on = .(code), rule_no := i.rule_no]
+  if ("kcd_main" %in% names(referred))
+    report[referred[, .(kcd_main = .abbreviate(unique(kcd_main))), by = code], on = .(code), kcd_main := i.kcd_main]
+  setcolorder(report, intersect(c("code", "reason", "rule_no", "kcd_main", "n_id", "n_cell"), names(report)))
+  setorder(report, -n_cell)
+  report[]
+}
+
+# A comma-joined sample of the values, so one bad code spread over hundreds of rules
+# still reports in one line.
+.abbreviate <- function(x, max_shown = 5L) {
+  x <- sort(x[!is.na(x)])
+  if (length(x) > max_shown)
+    sprintf("%s, +%d more", paste(head(x, max_shown), collapse = ","), length(x) - max_shown)
+  else paste(x, collapse = ",")
+}
+
+# One warning for the whole call. Raised here rather than inside a combiner so that R
+# names `combine_decision()` as the offending call, and once rather than per code so
+# that the default `warn = 0` does not collapse them into "there were N warnings".
+.warn_unresolved <- function(report) {
+  shown  <- head(report, 5L)
+  suffix <- if ("rule_no" %in% names(report)) sprintf("  (rule no: %s)", shown$rule_no) else ""
+  lines  <- sprintf("    %-14s %s%s", shown$code, shown$reason, suffix)
+  if (nrow(report) > nrow(shown))
+    lines <- c(lines, sprintf("    ... and %d more", nrow(report) - nrow(shown)))
+  plural <- function(n, word) sprintf("%s %s%s", format(n, big.mark = ","), word, if (n == 1L) "" else "s")
+  warning(sprintf("%s could not be resolved; %s referred to the underwriter.\n%s\n  Full detail in attr(combined, \"unresolved\").",
+                  plural(nrow(report), "decision code"),
+                  plural(sum(report$n_cell), "cell"),
+                  paste(lines, collapse = "\n")))
 }
 
 # The bands of one class, ordered. A class the engine has no letter for (the rule
@@ -165,15 +233,95 @@ combine_decision <- function(applied, decision_table, exclusion_table, reduction
 
 # Melt the per-disease decisions to one row per (id, coverage, disease), tagging
 # each with the combiner its class uses. No-rule diseases go to the underwriter.
+#
+# `kcd_main` and the rule row `no` come along when `applied` carries them, so a code
+# that turns out to be unresolvable can be traced back to the rule that wrote it.
+# A hand-built `applied` may have neither, and the rest of the pipeline does not
+# depend on them.
 .melt_decisions <- function(applied, decision_cols, combiner, underwriter) {
   applied <- as.data.table(copy(applied))
   applied[matched == 0L, (decision_cols) := underwriter]
-  long <- melt(applied, id.vars = c("id", "elp_day"), measure.vars = decision_cols,
+  carry <- intersect(c("id", "elp_day", "kcd_main", "no"), names(applied))
+  long <- melt(applied, id.vars = carry, measure.vars = decision_cols,
                variable.name = "coverage", value.name = "code", variable.factor = FALSE)
   long <- long[!is.na(code) & nzchar(code)]
   long[, method := combiner[substr(code, 1L, 1L)]]
   long[is.na(method), method := "priority"]
   long[]
+}
+
+# The decision table itself has to be interpretable before any decision can be. A
+# class letter is read off a code's first character and spliced into a regular
+# expression, so a two-character code would route to the wrong combiner without a
+# word and a metacharacter would corrupt the pattern. Neither is a defect one insured
+# can be referred for -- the whole table is unusable -- so this stops.
+.REGEX_METACHARACTERS <- c(".", "^", "$", "*", "+", "?", "(", ")", "[", "]", "{", "}", "|", "\\")
+.COMBINERS <- c("priority", "exclusion", "loading", "reduction")
+.check_decision_table <- function(decision_table) {
+  code <- decision_table$code
+  quote_all <- function(x) paste0("\"", x, "\"", collapse = ", ")
+  wide <- unique(code[nchar(code) != 1L])
+  if (length(wide))
+    stop(sprintf("`decision_table` codes must be one character; found %s.", quote_all(wide)))
+  meta <- unique(code[code %in% .REGEX_METACHARACTERS])
+  if (length(meta))
+    stop(sprintf("`decision_table` codes must not be regular-expression metacharacters; found %s.",
+                 quote_all(meta)))
+  duplicated_code <- unique(code[duplicated(code)])
+  if (length(duplicated_code))
+    stop(sprintf("`decision_table` has duplicate codes: %s.", quote_all(duplicated_code)))
+  unknown <- unique(decision_table$combiner[!decision_table$combiner %in% .COMBINERS])
+  if (length(unknown))
+    stop(sprintf("`decision_table` combiners must be one of %s; found %s.",
+                 quote_all(.COMBINERS), quote_all(unknown)))
+  invisible(TRUE)
+}
+
+# Which of these decision codes cannot be interpreted at all, and why?
+#
+# Resolvability depends only on the code text and the config tables. It does not
+# depend on the elapsed days, which decide *expiry*, and it does not depend on how
+# several diseases merge -- so the whole vocabulary is judged once, up front, and the
+# combiners never see a code they cannot read. Expiry and unreadability then stay
+# apart: an exclusion that ran out leaves the coverage standard, while one nobody can
+# read refers it, which is the only safe direction to fail in.
+#
+# The payload of a `priority` class (a limit code, a diagnosis code) is free text with
+# no syntax of its own, so only its class letter is checked.
+.unresolvable <- function(codes, decision_table, combiner, exclusion_table, reduction_table) {
+  reason <- vapply(codes, function(code) {
+    letter <- substr(code, 1L, 1L)
+    if (!letter %in% decision_table$code)
+      return(sprintf("class letter \"%s\" is not in decision_table", letter))
+    switch(combiner[[letter]],
+      exclusion = {
+        token  <- strsplit(code, ",", fixed = TRUE)[[1L]]
+        shaped <- grepl(sprintf("^%s[0-9]+\\(.*\\)$", letter), token)
+        if (!all(shaped))
+          return(sprintf("\"%s\" is not of the form %s<site>(<mark>)", token[!shaped][1L], letter))
+        mark    <- sub(sprintf("^%s[0-9]+\\((.*)\\)$", letter), "\\1", token)
+        unknown <- setdiff(mark, exclusion_table$mark)
+        if (length(unknown))
+          return(sprintf("mark \"%s\" is not in exclusion_table", unknown[1L]))
+        ""
+      },
+      reduction = {
+        if (!grepl(sprintf("^%s\\(.*\\)$", letter), code))
+          return(sprintf("\"%s\" is not of the form %s(<mark>)", code, letter))
+        mark <- sub(sprintf("^%s\\((.*)\\)$", letter), "\\1", code)
+        if (!mark %in% reduction_table$mark)
+          return(sprintf("mark \"%s\" is not in reduction_table", mark))
+        ""
+      },
+      loading = {
+        if (!grepl(sprintf("^%s\\([0-9]+\\)$", letter), code))
+          return(sprintf("\"%s\" does not carry a numeric index", code))
+        ""
+      },
+      ""   # priority: the payload has no syntax to check
+    )
+  }, character(1L), USE.NAMES = FALSE)
+  data.table(code = codes, reason = reason)[nzchar(reason)]
 }
 
 # priority: keep the worst (lowest-priority-number) code. This is the merge rule
