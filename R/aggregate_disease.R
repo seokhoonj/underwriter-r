@@ -42,9 +42,9 @@ aggregate_disease <- function(mapped) {
   id_disease    <- unique(in_scope[, .(id, kcd_main)])
 
   # per-treatment-type elapsed days, each the most recent (min) within scope
-  hos_elp_day <- in_scope[hos_day > 0,                 .(hos_elp_day = min(elapsed)), by = .(id, kcd_main)]
-  sur_elp_day <- in_scope[sur_cnt > 0,                 .(sur_elp_day = min(elapsed)), by = .(id, kcd_main)]
-  out_elp_day <- in_scope[hos_day == 0 & sur_cnt == 0, .(out_elp_day = min(elapsed)), by = .(id, kcd_main)]
+  hos_elp_day <- .min_elapsed(in_scope[hos_day > 0],                 "hos_elp_day")
+  sur_elp_day <- .min_elapsed(in_scope[sur_cnt > 0],                 "sur_elp_day")
+  out_elp_day <- .min_elapsed(in_scope[hos_day == 0 & sur_cnt == 0], "out_elp_day")
 
   # counts over the fixed 5-year window
   within_5yr <- reviewed[in_5yr == 1L]
@@ -73,7 +73,8 @@ aggregate_disease <- function(mapped) {
   # Keep them on the no-diagnosis code, carrying the days since their most recent
   # treatment (a real elapsed count, unlike a fabricated 0, which would read as
   # "still under treatment"), so the id survives to the final decision.
-  no_scope <- reviewed[!id %in% in_scope$id, .(elp_day = min(elapsed)), by = id]
+  outside  <- reviewed[!id %in% in_scope$id]
+  no_scope <- if (nrow(outside)) outside[, .(elp_day = min(elapsed)), by = id] else outside[0L, .(id)]
   if (nrow(no_scope)) {
     no_scope[ages, on = .(id), age := i.age]
     result <- rbind(result, no_scope[, .(id, kcd_main = .KCD_NO_DIAGNOSIS, age,
@@ -85,4 +86,18 @@ aggregate_disease <- function(mapped) {
   setcolorder(result, c("id", "kcd_main", "age", "hos_day", "sur_cnt", "out_cnt",
                         "hos_elp_day", "sur_elp_day", "out_elp_day", "elp_day"))
   result[]
+}
+
+# Days since the most recent treatment of one kind, per (id, kcd_main). A book with
+# no surgeries at all, or an insured whose every claim line is an inpatient one,
+# leaves one of these subsets empty -- and data.table still evaluates `j` once on an
+# empty subset, so `min()` of nothing would warn and return `Inf`.
+.min_elapsed <- function(rows, col) {
+  if (!nrow(rows)) {
+    empty <- rows[0L, .(id, kcd_main)]
+    return(empty[, (col) := integer()])
+  }
+  out <- rows[, .(min_elapsed = min(elapsed)), by = .(id, kcd_main)]
+  setnames(out, "min_elapsed", col)
+  out[]
 }

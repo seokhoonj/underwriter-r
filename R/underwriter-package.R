@@ -33,7 +33,7 @@ utils::globalVariables(c(
   # disease mapping + scope flags
   "kcd_main", "sub_chk", "lookback_mon", "review", "tdate", "in_lookback", "in_5yr",
   # aggregation
-  "elapsed", "hos_elp_day", "sur_elp_day", "out_elp_day", "elp_day", "out_cnt", "stay",
+  "elapsed", "hos_elp_day", "sur_elp_day", "out_elp_day", "elp_day", "out_cnt", "stay", "min_elapsed",
   # rule matching
   "decl_yn", "age_min", "age_max", "elp_day_min", "elp_day_max",
   "sur_cnt_min", "sur_cnt_max", "hos_day_min", "hos_day_max",
