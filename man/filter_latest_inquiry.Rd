@@ -10,7 +10,8 @@ filter_latest_inquiry(dt)
 \item{dt}{A cleansed claim table with \code{id} and \code{inq_date} columns.}
 }
 \value{
-The subset of \code{dt} restricted to each id's latest \code{inq_date}.
+The subset of \code{dt} restricted to each id's latest \code{inq_date} (all rows
+for an id whose dates are all \code{NA}).
 }
 \description{
 A customer re-quoted several times appears under several \code{inq_date}s -- each
@@ -20,4 +21,10 @@ rows sharing an id's maximum \code{inq_date} are kept (one inquiry spans many cl
 rows) and every id is preserved. Apply after \code{\link[=clean_icis]{clean_icis()}} and before
 aggregation so a multi-quote customer is evaluated once, on their latest
 inquiry, not double-counted across older inquiries.
+}
+\details{
+A missing \code{inq_date} is ignored when choosing the latest: \code{max(..., na.rm)}
+takes the newest real inquiry, so a stray undated row does not win. An id whose
+every \code{inq_date} is \code{NA} has no inquiry to pick, so all its rows are kept -- the
+insured is never dropped for a missing date.
 }

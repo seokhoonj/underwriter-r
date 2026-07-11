@@ -1,3 +1,15 @@
+test_that("filter_latest_inquiry ignores NA dates and never drops an id", {
+  dt <- data.table::data.table(
+    id       = c("A", "A", "A", "B", "C", "C"),
+    inq_date = as.Date(c("2025-01-01", "2025-03-01", NA, "2025-02-01", NA, NA)),
+    kcd0     = c("a1", "a2", "a3", "b1", "c1", "c2"))
+  out <- filter_latest_inquiry(dt)
+  expect_equal(out[id == "A", kcd0], "a2")             # newest real inquiry, not the NA row
+  expect_equal(out[id == "B", kcd0], "b1")
+  expect_setequal(out[id == "C", kcd0], c("c1", "c2")) # all dates NA: keep the id whole
+  expect_setequal(unique(out$id), c("A", "B", "C"))    # no id lost
+})
+
 test_that("clean_icis(method = 'auto') does not crash on NA hos_day", {
   dt <- data.table::data.table(
     id = c("A", "B"), gender = c("1", "2"), age = c(40L, 50L),

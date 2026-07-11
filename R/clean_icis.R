@@ -96,13 +96,22 @@ clean_icis <- function(dt, kcd_cols = paste0("kcd", 0:4),
 #' aggregation so a multi-quote customer is evaluated once, on their latest
 #' inquiry, not double-counted across older inquiries.
 #'
+#' A missing `inq_date` is ignored when choosing the latest: `max(..., na.rm)`
+#' takes the newest real inquiry, so a stray undated row does not win. An id whose
+#' every `inq_date` is `NA` has no inquiry to pick, so all its rows are kept -- the
+#' insured is never dropped for a missing date.
+#'
 #' @param dt A cleansed claim table with `id` and `inq_date` columns.
-#' @return The subset of `dt` restricted to each id's latest `inq_date`.
+#' @return The subset of `dt` restricted to each id's latest `inq_date` (all rows
+#'   for an id whose dates are all `NA`).
 #' @export
 filter_latest_inquiry <- function(dt) {
   dt <- as.data.table(dt)
-  latest <- dt[, .(inq_date = max(inq_date)), by = id]
-  dt[latest, on = .(id, inq_date)]
+  latest <- dt[, .(inq_date = suppressWarnings(max(inq_date, na.rm = TRUE))), by = id]
+  latest <- latest[is.finite(inq_date)]           # drop ids with no real inquiry date
+  kept <- dt[latest, on = .(id, inq_date)]
+  no_date <- dt[!id %in% latest$id]               # every inq_date NA: keep the id whole
+  if (nrow(no_date)) rbind(kept, no_date) else kept
 }
 
 # Parse dates, set gender, and reconcile the admission/discharge window in place.
