@@ -176,7 +176,7 @@ diagnose_ruleset <- function(ruleset,
 # "== section ==" header, then aligned "  <label> : <value>" lines.
 .print_diagnose_ruleset <- function(out) {
   .comma  <- function(x) format(x, big.mark = ",")
-  .line   <- function(label, value) cat(sprintf("  %-26s : %s\n", label, value))
+  .line   <- function(label, value) cat(sprintf("  %-28s : %s\n", label, value))
   .header <- function(title) cat(sprintf("\n== %s ==\n", title))
   .cap    <- function(dt, n = 20L) if (nrow(dt) > n) head(dt, n) else dt
   .more   <- function(dt, n = 20L) if (nrow(dt) > n) cat(sprintf("  ... %s more kcd_main\n", .comma(nrow(dt) - n)))
@@ -189,7 +189,7 @@ diagnose_ruleset <- function(ruleset,
   .line("rows", sprintf("%s across %s kcd_main", .comma(sc$n_row), .comma(sc$n_kcd)))
   for (nm in names(sc$by_col)) .line(paste0("by ", nm), .comma(sc$by_col[[nm]]))
   for (i in seq_len(nrow(.cap(sc$by_kcd)))) .line(sc$by_kcd$kcd_main[i],
-        sprintf("no %s (%s)", sc$by_kcd$no[i], sc$by_kcd$cols[i]))
+        sprintf("rule no %s (%s)", sc$by_kcd$no[i], sc$by_kcd$cols[i]))
   .more(sc$by_kcd)
 
   lc <- out$latent_conflict
