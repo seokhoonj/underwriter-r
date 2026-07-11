@@ -16,6 +16,13 @@
 #' @param aggregated Per-`(id, kcd_main)` inputs from [aggregate_disease()],
 #'   carrying `age`.
 #' @param ruleset A rule-set `data.table`.
+#' @param decision_cols The coverage decision columns. By default every column not
+#'   in the fixed set of key / band / declaration-attribute columns
+#'   (`.NON_DECISION_COLS`) -- which assumes the rule set carries only those
+#'   attributes plus one column per coverage. Adding an unrecognised non-coverage
+#'   column to the sheet would make the default treat it as a phantom coverage, so
+#'   pass `decision_cols` explicitly when the rule set carries extra attribute
+#'   columns.
 #' @return A list with `applied` (the input plus `matched`, `conflict`, and one
 #'   decision column per product; the decision-column names are stored on the
 #'   `"decision_cols"` attribute), `decision_cols`, `unmatched` (the input rows
@@ -27,9 +34,10 @@
 #'   matched rules disagree, so `n_conflict <= n_multi_matched`).
 #' @seealso [combine_decision()].
 #' @export
-match_rule <- function(aggregated, ruleset) {
+match_rule <- function(aggregated, ruleset,
+                       decision_cols = setdiff(names(ruleset), .NON_DECISION_COLS)) {
   ruleset <- as.data.table(ruleset)[decl_yn == 0L]
-  decision_cols <- setdiff(names(ruleset), .NON_DECISION_COLS)
+  decision_cols <- intersect(decision_cols, names(ruleset))
 
   input <- as.data.table(copy(aggregated))
   input[, rid := .I]

@@ -4,13 +4,25 @@
 \alias{match_rule}
 \title{Match aggregated inputs against a rule set}
 \usage{
-match_rule(aggregated, ruleset)
+match_rule(
+  aggregated,
+  ruleset,
+  decision_cols = setdiff(names(ruleset), .NON_DECISION_COLS)
+)
 }
 \arguments{
 \item{aggregated}{Per-\verb{(id, kcd_main)} inputs from \code{\link[=aggregate_disease]{aggregate_disease()}},
 carrying \code{age}.}
 
 \item{ruleset}{A rule-set \code{data.table}.}
+
+\item{decision_cols}{The coverage decision columns. By default every column not
+in the fixed set of key / band / declaration-attribute columns
+(\code{.NON_DECISION_COLS}) -- which assumes the rule set carries only those
+attributes plus one column per coverage. Adding an unrecognised non-coverage
+column to the sheet would make the default treat it as a phantom coverage, so
+pass \code{decision_cols} explicitly when the rule set carries extra attribute
+columns.}
 }
 \value{
 A list with \code{applied} (the input plus \code{matched}, \code{conflict}, and one
