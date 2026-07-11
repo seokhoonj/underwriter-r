@@ -41,6 +41,12 @@ clean_icis <- function(dt, kcd_cols = paste0("kcd", 0:4),
   method <- match.arg(method)
   dt <- as.data.table(copy(dt))
 
+  # 0. force the code columns to character. A column that arrived all-NA is logical,
+  #    and `set()` coerces its RHS to the column type -- so `.redistribute_multi()`
+  #    writing a code into such a column would silently turn it back to NA, losing the
+  #    diagnosis. Fixing the type up front also settles pack_left()'s type check.
+  dt[, (kcd_cols) := lapply(.SD, as.character), .SDcols = kcd_cols]
+
   # 1. note which rows arrived with a diagnosis code. No row is dropped for it:
   #    step 4 marks the codeless rows instead, so an insured with no diagnosis
   #    stays in the feed rather than vanishing and being re-added downstream.

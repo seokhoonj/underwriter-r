@@ -23,6 +23,21 @@ test_that("clean_icis marks an empty-cell row VACANT and does not lose it", {
   expect_equal(out[id == "B", kcd0], "VACANT")
 })
 
+test_that("clean_icis keeps every code from a multi-code cell when a kcd column is all-NA", {
+  # kcd4 arrives all-NA, hence logical; without the up-front character coercion,
+  # redistributing five comma-separated codes into it would coerce the fifth to NA
+  dt <- data.table::data.table(
+    id = "x", gender = "1", age = 40L,
+    inq_date = "20250601", pay_date = "20250201", acc_date = "20250101",
+    sdate = "20250101", edate = NA_character_, hos_day = 0L, hos_cnt = 0L, sur_cnt = 0L,
+    kcd0 = "M54.3, K63.5, S33, J06.9, A09",
+    kcd1 = NA_character_, kcd2 = NA_character_, kcd3 = NA_character_, kcd4 = NA
+  )
+  expect_silent(out <- clean_icis(dt))              # no coercion warning
+  codes <- unlist(out[, paste0("kcd", 0:4), with = FALSE], use.names = FALSE)
+  expect_true(all(c("M543", "K635", "S33", "J069", "A09") %in% codes))
+})
+
 test_that("clean_icis marks an unreadable code IRREGULAR, not a pass", {
   dt <- data.table::data.table(
     id = "C", gender = "1", age = 40L,
