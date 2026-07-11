@@ -62,11 +62,13 @@ match_rule <- function(aggregated, ruleset,
   first_match <- first_match[, c("rid", "matched", "no", "ord", decision_cols), with = FALSE]
 
   # inputs matched by more than one rule; near-all are identical duplicates, but
-  # some disagree on a decision -- those are the genuine conflicts.
+  # some disagree on a decision -- those are the genuine conflicts. Only a
+  # multi-matched input can conflict (a single match has one decision), so test
+  # uniqueN on just those, not on every matched input.
   matches_per_input <- joined[matched == 1L, .N, by = rid]
-  n_distinct        <- joined[matched == 1L, uniqueN(.SD), by = rid, .SDcols = decision_cols]
-  conflict_ids      <- n_distinct[V1 > 1L, rid]
   multi_matched_ids <- matches_per_input[N > 1L, rid]
+  n_distinct        <- joined[rid %in% multi_matched_ids, uniqueN(.SD), by = rid, .SDcols = decision_cols]
+  conflict_ids      <- n_distinct[V1 > 1L, rid]
 
   applied <- merge(input, first_match, by = "rid", all.x = TRUE)
   applied[, conflict := rid %in% conflict_ids]

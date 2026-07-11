@@ -18,6 +18,15 @@ mini_ruleset <- function(extra = NULL) {
 input <- function() data.table(id = "X", kcd_main = "A1", age = 40L, elp_day = 0L,
                                sur_cnt = 0L, hos_day = 0L)
 
+# two overlapping rules for the same kcd_main so one input matches both; the second
+# rule's decisions are the argument -- equal to rule 1 (a duplicate, no conflict) or
+# different (a genuine conflict).
+two_rule_ruleset <- function(cov1_2 = "S", cov2_2 = "U") {
+  r1 <- mini_ruleset()
+  r2 <- copy(r1)[, `:=`(no = 2L, ord = 2L, cov1 = cov1_2, cov2 = cov2_2)]
+  rbind(r1, r2)
+}
+
 test_that("match_rule infers the coverage columns and matches", {
   m <- match_rule(input(), mini_ruleset())
   expect_setequal(m$decision_cols, c("cov1", "cov2"))
@@ -41,4 +50,20 @@ test_that("passing decision_cols explicitly keeps the extra column out", {
 test_that("decision_cols not present in the rule set are ignored", {
   m <- match_rule(input(), mini_ruleset(), decision_cols = c("cov1", "cov2", "ghost"))
   expect_setequal(m$decision_cols, c("cov1", "cov2"))
+})
+
+test_that("identical overlapping rules multi-match but do not conflict", {
+  m <- match_rule(input(), two_rule_ruleset(cov1_2 = "S", cov2_2 = "U"))
+  expect_equal(m$n_multi_matched, 1L)
+  expect_equal(m$n_conflict, 0L)
+  expect_false(m$applied$conflict)
+  expect_equal(m$applied$cov1, "S")                    # lowest-ord match kept
+})
+
+test_that("overlapping rules that disagree on a decision are flagged as a conflict", {
+  m <- match_rule(input(), two_rule_ruleset(cov1_2 = "D", cov2_2 = "U"))
+  expect_equal(m$n_multi_matched, 1L)
+  expect_equal(m$n_conflict, 1L)
+  expect_true(m$applied$conflict)
+  expect_equal(nrow(m$conflict), 2L)                   # both overlapping rules listed
 })
