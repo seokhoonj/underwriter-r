@@ -38,6 +38,17 @@
 map_disease <- function(melted, disease_table) {
   melted <- as.data.table(copy(melted))
   disease_table <- as.data.table(disease_table)
+
+  # a `kcd` must map to one disease. A duplicate key would resolve differently in
+  # the two joins below -- the exact update-join takes the last matching row, the
+  # 3-character fallback takes the first (`mult = "first"`) -- so stop on it rather
+  # than let the mapping depend on row order. NA keys are inert (they match no real
+  # code and melt_kcd drops them), so only real duplicates count.
+  dup <- unique(disease_table$kcd[!is.na(disease_table$kcd) & duplicated(disease_table$kcd)])
+  if (length(dup))
+    stop(sprintf("`disease_table` has duplicate `kcd` keys: %s.",
+                 paste0("\"", utils::head(dup, 5L), "\"", collapse = ", ")))
+
   melted[disease_table, on = .(kcd),
        `:=`(kcd_main = i.kcd_main, sub_chk = i.sub_chk, lookback_mon = i.lookback_mon)]
   unmapped <- melted[is.na(kcd_main), which = TRUE]

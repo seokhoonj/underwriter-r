@@ -47,6 +47,16 @@ test_that("VACANT is in its window even with no treatment date at all", {
   expect_equal(out$in_lookback, 1L)
 })
 
+test_that("map_disease rejects a duplicate non-NA kcd key but tolerates NA keys", {
+  dup <- rbind(disease, data.table(kcd = "M543", kcd_main = "OTHER",
+                                   sub_chk = 0L, lookback_mon = 6L))
+  expect_error(map_disease(melted_row("M543"), dup), "duplicate `kcd` keys")
+  # NA keys are inert (they match no real code), so they must not trip the guard
+  with_na <- rbind(disease, data.table(kcd = c(NA, NA), kcd_main = c("000", "ZZZ"),
+                                       sub_chk = 1L, lookback_mon = 60L))
+  expect_no_error(map_disease(melted_row("M543"), with_na))
+})
+
 test_that("a disease table row for a reserved code is ignored", {
   meddling <- rbind(disease, data.table(kcd = "VACANT", kcd_main = "M543",
                                         sub_chk = 0L, lookback_mon = 1L))
