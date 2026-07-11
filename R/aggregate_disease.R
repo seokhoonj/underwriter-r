@@ -93,16 +93,22 @@ aggregate_disease <- function(mapped) {
   # values; the fold is `by = id`, and the per-disease detail is gone from here on
   # (diagnose_icis() reports it instead).
   #
-  # `elp_day` is `min(elapsed)` -- the SAME definition every other row uses, days
-  # since the most recent treatment of any kind -- so the EXPIRED row is not a special
-  # case. Note this is the most recent TREATMENT, not the most recent EXPIRY: a
+  # `elp_day` is `min(elapsed)` over the id's REVIEWED lines -- the SAME definition
+  # every other row uses, days since the most recent reviewed treatment -- so the
+  # EXPIRED row is not a special case. Reviewed-only, not all lines: a non-reviewed
+  # line (e.g. a rejected or duplicate claim) is not a treatment we would date, so it
+  # must not pull `elp_day` forward and make an aged-out insured read as recently
+  # treated. Note this is the most recent TREATMENT, not the most recent EXPIRY: a
   # short-lookback diagnosis can expire while still being the person's latest visit,
   # so a small `elp_day` here does NOT mean "barely expired". This one number cannot
   # explain why several diagnoses each aged out; diagnose_icis()'s scope section tells
-  # that story (which diagnoses, out of which windows). An id with no dated line at
-  # all gets `elp_day = NA` (never treated), not a fabricated number.
+  # that story (which diagnoses, out of which windows). An id with no dated reviewed
+  # line at all gets `elp_day = NA` (never treated), not a fabricated number.
+  #
+  # `outside` groups over ALL of an id's lines so a no-reviewed-line id is still kept,
+  # but the `elp_day` sub-expression reads only its `review == 1` elapsed.
   outside  <- all_rows[!id %in% result$id]
-  no_scope <- outside[, .(elp_day = { e <- elapsed[!is.na(elapsed)]
+  no_scope <- outside[, .(elp_day = { e <- elapsed[review == 1L & !is.na(elapsed)]
                                       if (length(e)) min(e) else NA_integer_ }), by = id]
   if (nrow(no_scope)) {
     no_scope[ages, on = .(id), age := i.age]
