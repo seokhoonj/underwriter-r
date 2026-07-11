@@ -66,17 +66,24 @@ aggregate_disease <- function(mapped) {
   result[is.na(out_cnt), out_cnt := 0L]
   # general-insurance elapsed = days since the most recent treatment of any type
   result[, elp_day := pmin(hos_elp_day, sur_elp_day, out_elp_day, na.rm = TRUE)]
-  # age (per insured) travels with each disease row -- the rule bands on it
-  ages <- reviewed[, .(age = max(as.integer(age))), by = id]
+  # age (per insured) travels with each disease row -- the rule bands on it. Take it
+  # from the whole mapped table, not just the reviewed rows, so an insured with no
+  # reviewed row at all (below) still has an age.
+  all_rows <- as.data.table(mapped)
+  all_rows[, elapsed := pmax(0L, as.integer(inq_date - pmax(acc_date, sdate, edate, na.rm = TRUE)))]
+  ages <- all_rows[, .(age = suppressWarnings(max(as.integer(age), na.rm = TRUE))), by = id]
+  ages[!is.finite(age), age := NA_integer_]
   result[ages, on = .(id), age := i.age]
 
-  # an insured all of whose diagnoses aged out has nothing in scope AND, unlike a
-  # codeless insured, no VACANT line to survive on -- their expired diagnoses are not
-  # kept (they would wrongly match their old rules and draw an exclusion or decline).
-  # So they would leave no row at all. Give them one EXPIRED placeholder to keep the
-  # id: it always resolves to standard, so its counts feed no rule and are 0, but
-  # `elp_day` carries the days since their most recent treatment (a real figure, not a
-  # fabricated 0 that would read as "still under treatment").
+  # every id in `mapped` must leave with a row -- the no-insured-left-behind
+  # invariant, guaranteed HERE and not just upstream. Any id not already in `result`
+  # had nothing in scope: an insured all of whose diagnoses aged out AND who (unlike a
+  # codeless one) has no VACANT line to survive on, or -- the defensive case, which
+  # the normal pipeline never produces since clean_icis() gives every line a main
+  # kcd0 -- an insured with no reviewed row at all. Give each one EXPIRED placeholder
+  # to keep the id: it always resolves to standard, so its counts feed no rule and are
+  # 0, but `elp_day` carries the days since their most recent treatment (a real
+  # figure, not a fabricated 0 that would read as "still under treatment").
   #
   # How several expired diagnoses collapse to ONE row: those rows never entered
   # `id_disease` (it is built from in_scope, which they failed), so `result` has none
@@ -92,9 +99,11 @@ aggregate_disease <- function(mapped) {
   # short-lookback diagnosis can expire while still being the person's latest visit,
   # so a small `elp_day` here does NOT mean "barely expired". This one number cannot
   # explain why several diagnoses each aged out; diagnose_icis()'s scope section tells
-  # that story (which diagnoses, out of which windows).
-  outside  <- reviewed[!id %in% in_scope$id]
-  no_scope <- if (nrow(outside)) outside[, .(elp_day = min(elapsed)), by = id] else outside[0L, .(id)]
+  # that story (which diagnoses, out of which windows). An id with no dated line at
+  # all gets `elp_day = NA` (never treated), not a fabricated number.
+  outside  <- all_rows[!id %in% result$id]
+  no_scope <- outside[, .(elp_day = { e <- elapsed[!is.na(elapsed)]
+                                      if (length(e)) min(e) else NA_integer_ }), by = id]
   if (nrow(no_scope)) {
     no_scope[ages, on = .(id), age := i.age]
     result <- rbind(result, no_scope[, .(id, kcd_main = .KCD_EXPIRED, age,

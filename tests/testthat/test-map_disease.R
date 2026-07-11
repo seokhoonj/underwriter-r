@@ -79,6 +79,17 @@ test_that("an insured whose every diagnosis expired, with no VACANT line, become
   expect_false(is.na(agg$elp_day))       # elp_day is real (days since most recent treatment)
 })
 
+test_that("aggregate_disease keeps an insured who has no reviewed row at all", {
+  # defensive: the normal pipeline gives every line a main kcd0 (review == 1), but
+  # aggregate_disease must not drop an id even if handed only non-reviewed rows
+  only_sub <- melted_row("M541")[, `:=`(sub_kcd = 1L)]                # not a main dx
+  mapped <- map_disease(only_sub, disease)
+  mapped[, review := 0L]                                             # force no reviewed row
+  agg <- aggregate_disease(mapped)
+  expect_equal(agg$id, "A")                                          # id survives
+  expect_equal(agg$kcd_main, "EXPIRED")
+})
+
 test_that("an expired diagnosis is simply dropped when another is in scope", {
   # one in-window (recent) and one expired: the person is decided on the live one,
   # the expired one leaves no trace and no EXPIRED row appears
