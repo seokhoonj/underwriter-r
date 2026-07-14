@@ -55,6 +55,12 @@ NULL
 # `lookback_mon` so a diagnosis stays in its window; it does not band this row.
 .KCD_EXPIRED   <- "EXPIRED"
 
+# The four sentinel codes the pipeline can emit. Every one must carry a
+# decl_yn == 0 rule or its inputs go unmatched; diagnose_ruleset() checks this
+# via `missing_sentinel`, since these codes may be absent from the rule sheet
+# entirely (unlike no_auto_rule, which only sees codes the sheet already lists).
+.KCD_SENTINELS <- c(.KCD_VACANT, .KCD_IRREGULAR, .KCD_UNMAPPED, .KCD_EXPIRED)
+
 # data.table's non-standard evaluation references column names as bare symbols,
 # which R CMD check would otherwise flag as undefined global variables. Register
 # every column symbol the pipeline uses so the check stays clean.

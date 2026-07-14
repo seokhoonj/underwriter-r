@@ -85,6 +85,32 @@ test_that("no_auto_rule flags a kcd_main with only declaration-dependent rows", 
   expect_equal(res$no_auto_rule$kcds, "B2")
 })
 
+test_that("missing_sentinel flags sentinel codes absent from the rule set", {
+  rs  <- rbind(rule_row(no = 1L), rule_row(no = 2L, kcd_main = "B2"))
+  res <- diagnose_ruleset(rs, verbose = FALSE)
+  expect_equal(res$missing_sentinel$n_kcd, 4L)
+  expect_setequal(res$missing_sentinel$kcds, c("VACANT", "IRREGULAR", "UNMAPPED", "EXPIRED"))
+})
+
+test_that("missing_sentinel is clear when every sentinel carries a decl_yn==0 row", {
+  rs <- rbind(rule_row(no = 1L, kcd_main = "VACANT"),
+              rule_row(no = 2L, kcd_main = "IRREGULAR"),
+              rule_row(no = 3L, kcd_main = "UNMAPPED"),
+              rule_row(no = 4L, kcd_main = "EXPIRED"))
+  res <- diagnose_ruleset(rs, verbose = FALSE)
+  expect_equal(res$missing_sentinel$n_kcd, 0L)
+})
+
+test_that("a sentinel present only on decl_yn==1 still counts as missing", {
+  rs <- rbind(rule_row(no = 1L, kcd_main = "VACANT"),
+              rule_row(no = 2L, kcd_main = "IRREGULAR"),
+              rule_row(no = 3L, kcd_main = "UNMAPPED"),
+              rule_row(no = 4L, kcd_main = "EXPIRED", decl_yn = 1L))
+  res <- diagnose_ruleset(rs, verbose = FALSE)
+  expect_equal(res$missing_sentinel$n_kcd, 1L)
+  expect_equal(res$missing_sentinel$kcds, "EXPIRED")
+})
+
 test_that("explicit decision_cols restricts what counts as a decision", {
   rs <- rbind(rule_row(no = 1L, cov1 = "S", cov2 = "S"),
               rule_row(no = 2L, ord = 2L, cov1 = "S", cov2 = "U"))

@@ -37,6 +37,14 @@
 #'     forced to the underwriter -- the static form of [match_rule()]'s
 #'     `unmatched`, for diseases the rule set does carry (a disease absent from
 #'     the rule set entirely is a mapping gap, not this).}
+#'   \item{`missing_sentinel`}{the pipeline's sentinel codes (`VACANT`,
+#'     `IRREGULAR`, `UNMAPPED`, `EXPIRED`) that have no `decl_yn == 0` rule.
+#'     Every insured resolves onto one of these when they have no reviewable
+#'     diagnosis, so a missing sentinel row sends all such insured to
+#'     `unmatched`. Unlike `no_auto_rule` this checks the fixed sentinel set
+#'     directly, catching the case where the rule set omits a sentinel row
+#'     entirely -- which `no_auto_rule` cannot see, as it only scans codes the
+#'     sheet already lists.}
 #' }
 #'
 #' @param ruleset A rule-set `data.table` (or coercible), the same table
@@ -48,7 +56,7 @@
 #' @param verbose If `TRUE` (default) print a report; the list is always returned
 #'   invisibly.
 #' @return Invisibly, a named list with `n_rule`, `n_kcd`, `n_auto` (the
-#'   `decl_yn == 0` row count) and the four sections above.
+#'   `decl_yn == 0` row count) and the five sections above.
 #' @seealso [match_rule()], [diagnose_icis()].
 #' @export
 diagnose_ruleset <- function(ruleset,
@@ -146,6 +154,14 @@ diagnose_ruleset <- function(ruleset,
   no_auto <- setdiff(rs[, unique(kcd_main)], auto[, unique(kcd_main)])
   no_auto_rule <- list(n_kcd = length(no_auto), kcds = no_auto)
 
+  # --- missing_sentinel -----------------------------------------------------
+  # the four sentinel codes the pipeline emits must each carry a decl_yn==0 rule.
+  # Unlike no_auto_rule they may be absent from the sheet entirely, so checking
+  # "present but no auto rule" misses them; check the fixed set directly. This is
+  # the blind spot that let a rule set drop its sentinel catch-all rows silently.
+  missing <- setdiff(.KCD_SENTINELS, auto[, unique(kcd_main)])
+  missing_sentinel <- list(n_kcd = length(missing), kcds = missing)
+
   out <- list(
     n_rule           = n_rule,
     n_kcd            = n_kcd,
@@ -153,7 +169,8 @@ diagnose_ruleset <- function(ruleset,
     shadow_condition = shadow_condition,
     latent_conflict  = latent_conflict,
     exact_duplicate  = exact_duplicate,
-    no_auto_rule     = no_auto_rule
+    no_auto_rule     = no_auto_rule,
+    missing_sentinel = missing_sentinel
   )
   if (verbose) .print_diagnose_ruleset(out)
   invisible(out)
@@ -211,4 +228,9 @@ diagnose_ruleset <- function(ruleset,
   .header("no_auto_rule (kcd_main with no decl_yn==0 rule -> every input unmatched)")
   .line("kcd_main", .comma(na$n_kcd))
   if (na$n_kcd) .line("e.g.", paste(head(na$kcds, 15L), collapse = ", "))
+
+  ms <- out$missing_sentinel
+  .header("missing_sentinel (pipeline sentinel codes with no decl_yn==0 rule)")
+  .line("kcd_main", .comma(ms$n_kcd))
+  if (ms$n_kcd) .line("missing", paste(ms$kcds, collapse = ", "))
 }

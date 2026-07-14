@@ -24,7 +24,7 @@ invisibly.}
 }
 \value{
 Invisibly, a named list with \code{n_rule}, \code{n_kcd}, \code{n_auto} (the
-\code{decl_yn == 0} row count) and the four sections above.
+\code{decl_yn == 0} row count) and the five sections above.
 }
 \description{
 Statically validates a rule set -- no claim data required -- for the authoring
@@ -65,6 +65,14 @@ every decision -- redundant rows that inflate \code{\link[=match_rule]{match_rul
 forced to the underwriter -- the static form of \code{\link[=match_rule]{match_rule()}}'s
 \code{unmatched}, for diseases the rule set does carry (a disease absent from
 the rule set entirely is a mapping gap, not this).}
+\item{\code{missing_sentinel}}{the pipeline's sentinel codes (\code{VACANT},
+\code{IRREGULAR}, \code{UNMAPPED}, \code{EXPIRED}) that have no \code{decl_yn == 0} rule.
+Every insured resolves onto one of these when they have no reviewable
+diagnosis, so a missing sentinel row sends all such insured to
+\code{unmatched}. Unlike \code{no_auto_rule} this checks the fixed sentinel set
+directly, catching the case where the rule set omits a sentinel row
+entirely -- which \code{no_auto_rule} cannot see, as it only scans codes the
+sheet already lists.}
 }
 }
 \seealso{
