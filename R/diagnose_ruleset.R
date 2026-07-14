@@ -111,6 +111,10 @@ diagnose_ruleset <- function(ruleset,
   as_char <- function(dt, cols) as.matrix(dt[, lapply(.SD, function(v) {
     v <- as.character(v); v[is.na(v)] <- ""; v
   }), .SDcols = cols])
+  # a pair whose only difference is a shadow condition -- including out_day, a
+  # band match_rule() carries but never joins on -- is not a genuine conflict;
+  # compare those columns too, not just the .SHADOW_COND_COLS attributes.
+  sh_cmp_cols <- c(sh_cols, intersect(c("out_day_min", "out_day_max"), names(auto)))
   pairs <- list()
   for (k in auto[, unique(kcd_main)]) {
     g <- auto[kcd_main == k]
@@ -118,9 +122,11 @@ diagnose_ruleset <- function(ruleset,
     if (m < 2L) next
     lo   <- as.matrix(g[, ..band_lo]); hi <- as.matrix(g[, ..band_hi])
     decm <- as_char(g, decision_cols)
-    shm  <- if (length(sh_cols)) as_char(g, sh_cols) else NULL
+    shm  <- if (length(sh_cmp_cols)) as_char(g, sh_cmp_cols) else NULL
     for (i in seq_len(m - 1L)) for (j in (i + 1L):m) {
-      if (all(lo[i, ] <= hi[j, ] & lo[j, ] <= hi[i, ]) && any(decm[i, ] != decm[j, ])) {
+      # an NA band bound never matches in match_rule()'s non-equi join, so the
+      # rule cannot fire and cannot conflict; isTRUE() folds that NA to no-overlap.
+      if (isTRUE(all(lo[i, ] <= hi[j, ] & lo[j, ] <= hi[i, ])) && any(decm[i, ] != decm[j, ])) {
         shadow_expl <- !is.null(shm) && any(shm[i, ] != shm[j, ])
         pairs[[length(pairs) + 1L]] <- list(kcd_main = k, no_a = g$no[i], no_b = g$no[j],
                                              shadow_explained = shadow_expl)

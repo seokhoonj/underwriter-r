@@ -71,6 +71,26 @@ test_that("non-overlapping bands do not conflict even when decisions differ", {
   expect_equal(res$latent_conflict$n_pair, 0L)
 })
 
+test_that("a disagreement distinguished only by out_day is shadow-explained, not genuine", {
+  # match_rule() never joins on out_day, so a constrained out_day band is a
+  # shadow condition; a pair differing only there must not count as genuine.
+  rs  <- rbind(rule_row(no = 1L, out_day_max = 30L,   cov1 = "S"),
+               rule_row(no = 2L, ord = 2L, out_day_max = 9999L, cov1 = "U"))
+  res <- diagnose_ruleset(rs, verbose = FALSE)
+  expect_equal(res$latent_conflict$n_pair, 1L)
+  expect_equal(res$latent_conflict$n_genuine, 0L)
+  expect_true(res$latent_conflict$pairs$shadow_explained[1])
+})
+
+test_that("an NA band bound does not crash latent_conflict", {
+  # an NA min/max never matches match_rule()'s non-equi join, so it cannot
+  # conflict; the validator must fold the NA to no-overlap, not abort on if(NA).
+  rs  <- rbind(rule_row(no = 1L, elp_day_min = NA_integer_, cov1 = "S"),
+               rule_row(no = 2L, ord = 2L, cov1 = "U"))
+  res <- diagnose_ruleset(rs, verbose = FALSE)
+  expect_equal(res$latent_conflict$n_pair, 0L)
+})
+
 test_that("exact_duplicate counts engine-equivalent rows", {
   rs  <- rbind(rule_row(no = 1L), rule_row(no = 2L, ord = 2L))   # identical bands + decisions
   res <- diagnose_ruleset(rs, verbose = FALSE)
