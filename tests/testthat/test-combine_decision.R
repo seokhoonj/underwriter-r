@@ -73,8 +73,7 @@ test_that("combine_decision rejects a decision table with no site cap", {
   applied <- data.table::data.table(id = "X", kcd_main = "K1", elp_day = 0L,
                                     matched = 1L, cov1 = "R03(3)")
   data.table::setattr(applied, "decision_cols", "cov1")
-  combine <- function(dec) combine_decision(applied, dec, tables$exclusion_table,
-                                            tables$reduction_table, tables$loading_table)
+  combine <- function(dec) combine_decision(applied, list(decision = dec, exclusion = tables$exclusion_table, reduction = tables$reduction_table, loading = tables$loading_table))
   absent <- data.table::copy(tables$decision_table)[, max_sites := NULL]
   expect_error(combine(absent), "needs a `max_sites` column")
   blank <- data.table::copy(tables$decision_table)[code == "R", max_sites := NA_integer_]
@@ -86,8 +85,7 @@ test_that("combine_decision rejects a loading table it cannot read", {
   applied <- data.table::data.table(id = "X", kcd_main = "K1", elp_day = 0L,
                                     matched = 1L, cov1 = "E(25)")
   data.table::setattr(applied, "decision_cols", "cov1")
-  combine <- function(bands) combine_decision(applied, tables$decision_table, tables$exclusion_table,
-                                              tables$reduction_table, bands)
+  combine <- function(bands) combine_decision(applied, list(decision = tables$decision_table, exclusion = tables$exclusion_table, reduction = tables$reduction_table, loading = bands))
   # a sum below the first band would index the decision vector out of existence
   expect_error(combine(loading_bands(c(50L, 201L), c("U", "D"))), "first `at_least` must be 0")
   expect_error(combine(loading_bands(c(0L, 0L), c("S", "D"))), "duplicate `at_least`")
@@ -146,8 +144,7 @@ test_that("combine_decision reports every unreadable code with the rule that wro
     cov1     = c("L(99)", "R03(3)", "s"))
   data.table::setattr(applied, "decision_cols", "cov1")
   suppressWarnings(
-    combined <- combine_decision(applied, tables$decision_table, tables$exclusion_table,
-                                 tables$reduction_table, tables$loading_table))
+    combined <- combine_decision(applied, list(decision = tables$decision_table, exclusion = tables$exclusion_table, reduction = tables$reduction_table, loading = tables$loading_table)))
   report <- attr(combined, "unresolved")
   expect_equal(nrow(report), 2L)
   expect_setequal(report$code, c("L(99)", "s"))
@@ -161,8 +158,7 @@ test_that("combine_decision reports every unreadable code with the rule that wro
   clean <- data.table::copy(applied)[, cov1 := c("L(3)", "R03(3)", "S")]
   data.table::setattr(clean, "decision_cols", "cov1")
   expect_silent(
-    ok <- combine_decision(clean, tables$decision_table, tables$exclusion_table,
-                           tables$reduction_table, tables$loading_table))
+    ok <- combine_decision(clean, list(decision = tables$decision_table, exclusion = tables$exclusion_table, reduction = tables$reduction_table, loading = tables$loading_table)))
   expect_null(attr(ok, "unresolved"))
 })
 
@@ -172,8 +168,7 @@ test_that("trace_decision names the code that referred a coverage", {
                                     elp_day = 0L, matched = 1L, cov1 = c("L(99)", "R03(3)"))
   data.table::setattr(applied, "decision_cols", "cov1")
   suppressWarnings({
-    combined <- combine_decision(applied, tables$decision_table, tables$exclusion_table,
-                                 tables$reduction_table, tables$loading_table)
+    combined <- combine_decision(applied, list(decision = tables$decision_table, exclusion = tables$exclusion_table, reduction = tables$reduction_table, loading = tables$loading_table))
     tr <- trace_decision(applied, combined, "A")
   })
   expect_true(all(tr$ok))
@@ -185,8 +180,7 @@ test_that("combine_decision rejects a decision table it cannot read", {
   applied <- data.table::data.table(id = "X", kcd_main = "K1", elp_day = 0L,
                                     matched = 1L, cov1 = "S")
   data.table::setattr(applied, "decision_cols", "cov1")
-  combine <- function(dec) combine_decision(applied, dec, tables$exclusion_table,
-                                            tables$reduction_table, tables$loading_table)
+  combine <- function(dec) combine_decision(applied, list(decision = dec, exclusion = tables$exclusion_table, reduction = tables$reduction_table, loading = tables$loading_table))
   wide <- data.table::copy(tables$decision_table)[code == "R", code := "RR"]
   expect_error(combine(wide), "must be one character")
   meta <- data.table::copy(tables$decision_table)[code == "R", code := "."]
@@ -202,7 +196,7 @@ test_that("combine_decision errors without an underwriter role", {
   dec <- data.table::copy(f$decision_table)
   dec[role == "underwriter", role := NA]
   expect_error(
-    combine_decision(f$applied, dec, f$exclusion_table, f$reduction_table, f$loading_table),
+    combine_decision(f$applied, list(decision = dec, exclusion = f$exclusion_table, reduction = f$reduction_table, loading = f$loading_table)),
     "underwriter"
   )
 })
@@ -237,8 +231,7 @@ test_that("combine_decision carries its config so a recombine reproduces the tab
   applied <- data.table::data.table(id = "X", kcd_main = c("K1", "K2"), elp_day = 0L,
                                     matched = 1L, cov1 = c("R03(3)", "R12(3)"))
   data.table::setattr(applied, "decision_cols", "cov1")
-  tight <- combine_decision(applied, tables$decision_table, tables$exclusion_table,
-                            tables$reduction_table, tables$loading_table)
+  tight <- combine_decision(applied, list(decision = tables$decision_table, exclusion = tables$exclusion_table, reduction = tables$reduction_table, loading = tables$loading_table))
   expect_equal(tight$cov1, "D")   # two sites over the cap of one
   expect_equal(attr(tight, "loading_table"), tables$loading_table)
   expect_equal(attr(tight, "decision_table"), tables$decision_table)

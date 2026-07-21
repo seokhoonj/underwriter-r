@@ -6,38 +6,39 @@
 \usage{
 combine_decision(
   applied,
-  decision_table,
-  exclusion_table,
-  reduction_table,
-  loading_table,
+  rulebook,
   decision_cols = attr(applied, "decision_cols")
 )
 }
 \arguments{
 \item{applied}{The per-disease decisions from \code{\link[=match_rule]{match_rule()}} (\verb{$applied}).}
 
-\item{decision_table}{Decision-code table with columns \code{code}, \code{priority}
+\item{rulebook}{A named list of the four config tables the composition reads:
+\code{decision}, \code{exclusion}, \code{reduction}, \code{loading}. Passing them as one object
+parallels the simplified-issue \code{\link[=combine_si_decision]{combine_si_decision()}} and keeps the caller
+from spelling four arguments in a fixed order.
+\itemize{
+\item \code{decision} -- decision-code table with columns \code{code}, \code{priority}
 (lower = worse; ranks the two terminal codes and the codes merging by
 \code{priority}, nothing else), \code{combiner}
 (\code{priority}/\code{exclusion}/\code{loading}/\code{reduction}, the within-class merge rule),
 \code{role} (marks the engine-emitted codes: \code{standard}, \code{decline},
-\code{underwriter} -- an \code{underwriter} row is required, since unmatched
-diseases are referred there), \code{auto} (\code{1}/\code{0}, read by \code{\link[=tabulate_decision]{tabulate_decision()}}
-and \code{plot()} to flag which codes count as automatic), and \code{max_sites} (the
-distinct exclusion sites a coverage tolerates before it declines; required on
-the exclusion code's row, blank on every other, as \code{role} is). Its row order is
-the order the composed codes are written in.}
-
-\item{exclusion_table, reduction_table}{Period-code tables listing the valid
-\code{mark}s (\code{"5i"} = 5 years minus elapsed, \code{"3"} = 3 years, \code{"99"} = whole
-period); the period logic is parsed from the mark itself.}
-
-\item{loading_table}{Columns \code{at_least}, \code{decision}. A staircase over the summed
-loading index: a row claims every sum from its \code{at_least} (inclusive) up to the
-next row's, the last row runs to infinity, and the first must start at \code{0}. A
-\code{decision} holding the bare loading letter keeps the loading itself, so the band
-reads \code{E(75)}; any other value substitutes for it, so \code{"U"} or \code{"D"} escalates
-the coverage rather than loading it.}
+\code{underwriter} -- an \code{underwriter} row is required, since unmatched diseases
+are referred there), \code{auto} (\code{1}/\code{0}, read by \code{\link[=tabulate_decision]{tabulate_decision()}} and
+\code{plot()} to flag which codes count as automatic), and \code{max_sites} (the
+distinct exclusion sites a coverage tolerates before it declines; required
+on the exclusion code's row, blank on every other, as \code{role} is). Its row
+order is the order the composed codes are written in.
+\item \code{exclusion}, \code{reduction} -- period-code tables listing the valid \code{mark}s
+(\code{"5i"} = 5 years minus elapsed, \code{"3"} = 3 years, \code{"99"} = whole period);
+the period logic is parsed from the mark itself.
+\item \code{loading} -- columns \code{at_least}, \code{decision}. A staircase over the summed
+loading index: a row claims every sum from its \code{at_least} (inclusive) up to
+the next row's, the last row runs to infinity, and the first must start at
+\code{0}. A \code{decision} holding the bare loading letter keeps the loading itself,
+so the band reads \code{E(75)}; any other value substitutes for it, so \code{"U"} or
+\code{"D"} escalates the coverage rather than loading it.
+}}
 
 \item{decision_cols}{Coverage decision columns (default: the \code{"decision_cols"}
 attribute set by \code{\link[=match_rule]{match_rule()}}).}

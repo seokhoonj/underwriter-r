@@ -47,8 +47,7 @@ compose_one <- function(codes, elp_day = 0L, tables = compose_tables()) {
     cov1     = codes
   )
   data.table::setattr(applied, "decision_cols", "cov1")
-  combine_decision(applied, tables$decision_table, tables$exclusion_table,
-                   tables$reduction_table, tables$loading_table)$cov1
+  combine_decision(applied, list(decision = tables$decision_table, exclusion = tables$exclusion_table, reduction = tables$reduction_table, loading = tables$loading_table))$cov1
 }
 
 fixture <- function() {
@@ -77,8 +76,9 @@ fixture <- function() {
   )
   data.table::setattr(applied, "decision_cols", decision_cols)
 
-  combined <- combine_decision(applied, decision_table, exclusion_table,
-                               reduction_table, loading_table)
+  combined <- combine_decision(applied, list(decision = decision_table,
+                               exclusion = exclusion_table, reduction = reduction_table,
+                               loading = loading_table))
 
   list(applied = applied, combined = combined,
        decision_table = decision_table, exclusion_table = exclusion_table,

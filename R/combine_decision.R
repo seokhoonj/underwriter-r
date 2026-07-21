@@ -62,26 +62,30 @@
 #' claim feed.
 #'
 #' @param applied The per-disease decisions from [match_rule()] (`$applied`).
-#' @param decision_table Decision-code table with columns `code`, `priority`
-#'   (lower = worse; ranks the two terminal codes and the codes merging by
-#'   `priority`, nothing else), `combiner`
-#'   (`priority`/`exclusion`/`loading`/`reduction`, the within-class merge rule),
-#'   `role` (marks the engine-emitted codes: `standard`, `decline`,
-#'   `underwriter` -- an `underwriter` row is required, since unmatched
-#'   diseases are referred there), `auto` (`1`/`0`, read by [tabulate_decision()]
-#'   and `plot()` to flag which codes count as automatic), and `max_sites` (the
-#'   distinct exclusion sites a coverage tolerates before it declines; required on
-#'   the exclusion code's row, blank on every other, as `role` is). Its row order is
-#'   the order the composed codes are written in.
-#' @param exclusion_table,reduction_table Period-code tables listing the valid
-#'   `mark`s (`"5i"` = 5 years minus elapsed, `"3"` = 3 years, `"99"` = whole
-#'   period); the period logic is parsed from the mark itself.
-#' @param loading_table Columns `at_least`, `decision`. A staircase over the summed
-#'   loading index: a row claims every sum from its `at_least` (inclusive) up to the
-#'   next row's, the last row runs to infinity, and the first must start at `0`. A
-#'   `decision` holding the bare loading letter keeps the loading itself, so the band
-#'   reads `E(75)`; any other value substitutes for it, so `"U"` or `"D"` escalates
-#'   the coverage rather than loading it.
+#' @param rulebook A named list of the four config tables the composition reads:
+#'   `decision`, `exclusion`, `reduction`, `loading`. Passing them as one object
+#'   parallels the simplified-issue [combine_si_decision()] and keeps the caller
+#'   from spelling four arguments in a fixed order.
+#'   * `decision` -- decision-code table with columns `code`, `priority`
+#'     (lower = worse; ranks the two terminal codes and the codes merging by
+#'     `priority`, nothing else), `combiner`
+#'     (`priority`/`exclusion`/`loading`/`reduction`, the within-class merge rule),
+#'     `role` (marks the engine-emitted codes: `standard`, `decline`,
+#'     `underwriter` -- an `underwriter` row is required, since unmatched diseases
+#'     are referred there), `auto` (`1`/`0`, read by [tabulate_decision()] and
+#'     `plot()` to flag which codes count as automatic), and `max_sites` (the
+#'     distinct exclusion sites a coverage tolerates before it declines; required
+#'     on the exclusion code's row, blank on every other, as `role` is). Its row
+#'     order is the order the composed codes are written in.
+#'   * `exclusion`, `reduction` -- period-code tables listing the valid `mark`s
+#'     (`"5i"` = 5 years minus elapsed, `"3"` = 3 years, `"99"` = whole period);
+#'     the period logic is parsed from the mark itself.
+#'   * `loading` -- columns `at_least`, `decision`. A staircase over the summed
+#'     loading index: a row claims every sum from its `at_least` (inclusive) up to
+#'     the next row's, the last row runs to infinity, and the first must start at
+#'     `0`. A `decision` holding the bare loading letter keeps the loading itself,
+#'     so the band reads `E(75)`; any other value substitutes for it, so `"U"` or
+#'     `"D"` escalates the coverage rather than loading it.
 #' @param decision_cols Coverage decision columns (default: the `"decision_cols"`
 #'   attribute set by [match_rule()]).
 #' @return A wide `data.table`, one row per `id`, one column per coverage. The
@@ -95,8 +99,20 @@
 #'   could not resolve -- `code`, `reason`, the `rule_no` and `kcd_main` that wrote
 #'   it, and the `n_id` / `n_cell` it reached -- or `NULL` when every code resolved.
 #' @export
-combine_decision <- function(applied, decision_table, exclusion_table, reduction_table, loading_table,
+combine_decision <- function(applied, rulebook,
                              decision_cols = attr(applied, "decision_cols")) {
+  # unpack the rulebook into the four tables the body works with, so the
+  # composition logic below is untouched by the argument change.
+  need <- c("decision", "exclusion", "reduction", "loading")
+  miss <- setdiff(need, names(rulebook))
+  if (length(miss))
+    stop("`rulebook` is missing table(s): ", paste(miss, collapse = ", "),
+         ". Pass a list with `decision`, `exclusion`, `reduction`, `loading`.")
+  decision_table  <- rulebook$decision
+  exclusion_table <- rulebook$exclusion
+  reduction_table <- rulebook$reduction
+  loading_table   <- rulebook$loading
+
   .check_decision_table(decision_table)
   priority <- setNames(as.integer(decision_table$priority), decision_table$code)
   combiner <- setNames(decision_table$combiner, decision_table$code)

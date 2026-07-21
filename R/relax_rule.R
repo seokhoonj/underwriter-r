@@ -67,8 +67,9 @@ relax_rule <- function(applied, combined, kcd_main, coverage = NULL) {
     relaxed[tgt & matched == 1L & get(col) == underwriter, (col) := standard]
   relaxed[tgt, matched := 1L]
 
-  new_combined <- combine_decision(relaxed, decision_table, exclusion_table,
-                                   reduction_table, loading_table, decision_cols = decision_cols)
+  new_combined <- combine_decision(relaxed, list(decision = decision_table,
+                                   exclusion = exclusion_table, reduction = reduction_table,
+                                   loading = loading_table), decision_cols = decision_cols)
   relaxed_share <- tabulate_decision(new_combined)[, .(auto_relaxed = sum(prop[auto == "1"])),
                                                    by = coverage]
 

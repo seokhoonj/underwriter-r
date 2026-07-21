@@ -68,8 +68,9 @@ trace_decision <- function(applied, combined, id) {
                     by = coverage]
 
   # recompute this id's decision and compare to the stored one
-  recomputed <- combine_decision(applied_one, decision_table, exclusion_table, reduction_table, loading_table,
-                                 decision_cols = decision_cols)
+  recomputed <- combine_decision(applied_one, list(decision = decision_table,
+                                 exclusion = exclusion_table, reduction = reduction_table,
+                                 loading = loading_table), decision_cols = decision_cols)
   computed <- melt(recomputed, id.vars = "id", variable.name = "coverage", value.name = "computed",
                    variable.factor = FALSE)[, .(coverage, computed)]
 
