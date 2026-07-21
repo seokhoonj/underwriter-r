@@ -25,10 +25,10 @@
 #' @export
 aggregate_disease <- function(mapped) {
   reviewed <- as.data.table(mapped)[review == 1L]
-  # elapsed days since the most recent treatment. clamp at 0: a treatment dated
-  # after the inquiry (edate pushed past inquiry by a large hos_day = still
-  # hospitalized) means "current", i.e. 0 days elapsed -- never negative.
-  reviewed[, elapsed := pmax(0L, as.integer(inq_date - pmax(acc_date, sdate, edate, na.rm = TRUE)))]
+  # treatment date, elapsed days, and treatment-type flags. Shared with the
+  # simplified-issue path (see R/treatment.R) so the two products cannot drift on
+  # what counts as a hospitalization, a surgery, or an outpatient visit.
+  .tag_treatment(reviewed)
 
   # (id, kcd_main) universe: within the disease lookback window. IRREGULAR and
   # UNMAPPED have no lookback of their own, so they fall back to the 5-year window;
@@ -44,22 +44,15 @@ aggregate_disease <- function(mapped) {
   id_disease    <- unique(in_scope[, .(id, kcd_main)])
 
   # per-treatment-type elapsed days, each the most recent (min) within scope
-  hos_elp_day <- .min_elapsed(in_scope[hos_day > 0],                 "hos_elp_day")
-  sur_elp_day <- .min_elapsed(in_scope[sur_cnt > 0],                 "sur_elp_day")
-  out_elp_day <- .min_elapsed(in_scope[hos_day == 0 & sur_cnt == 0], "out_elp_day")
+  hos_elp_day <- .min_elapsed(in_scope[is_hos == TRUE], "hos_elp_day")
+  sur_elp_day <- .min_elapsed(in_scope[is_sur == TRUE], "sur_elp_day")
+  out_elp_day <- .min_elapsed(in_scope[is_out == TRUE], "out_elp_day")
 
-  # counts over the fixed 5-year window
-  within_5yr <- reviewed[in_5yr == 1L]
-  hosp       <- within_5yr[hos_day > 0]
-  hosp[, edate := pmin(edate, inq_date)]   # don't count hospital days after inquiry
-  hospital_days <- if (nrow(hosp))
-    instead::count_stay(hosp, id, kcd_main, sdate, edate)[, .(id, kcd_main, hos_day = stay)]
-  else data.table(id = character(), kcd_main = character(), hos_day = integer())
-  surgery_count    <- within_5yr[sur_cnt > 0,                 .(sur_cnt = uniqueN(acc_date)), by = .(id, kcd_main)]
-  outpatient_count <- within_5yr[hos_day == 0 & sur_cnt == 0, .(out_cnt = uniqueN(acc_date)), by = .(id, kcd_main)]
+  # counts over the fixed 5-year window (shared with the simplified-issue path)
+  counted <- .count_treatment(reviewed[in_5yr == 1L])
 
   result <- Reduce(function(x, y) merge(x, y, by = c("id", "kcd_main"), all.x = TRUE),
-                   list(id_disease, hospital_days, surgery_count, outpatient_count,
+                   list(id_disease, counted,
                         hos_elp_day, sur_elp_day, out_elp_day))
   result[is.na(hos_day), hos_day := 0L]
   result[is.na(sur_cnt), sur_cnt := 0L]
