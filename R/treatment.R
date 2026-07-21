@@ -50,12 +50,15 @@
 #' propagate `NA`.
 #'
 #' @param dt Claim lines already tagged by [.tag_treatment()].
-#' @param by Grouping columns (default `id`, `kcd_main`).
-#' @return A `data.table` keyed on `by` with `hos_day`, `sur_cnt`, `out_cnt`.
+#' @return A `data.table` keyed on `id`, `kcd_main` with `hos_day`, `sur_cnt`,
+#'   `out_cnt`.
 #' @keywords internal
-.count_treatment <- function(dt, by = c("id", "kcd_main")) {
+.count_treatment <- function(dt) {
   id <- kcd_main <- sdate <- edate <- inq_date <- acc_date <- NULL  # data.table NSE
   is_hos <- is_sur <- is_out <- hos_day <- sur_cnt <- out_cnt <- stay <- NULL
+  # the hospitalization branch below counts by (id, kcd_main) explicitly, so the
+  # grouping is fixed rather than a parameter no caller varies.
+  by    <- c("id", "kcd_main")
   empty <- dt[0L, ..by]
   if (!nrow(dt))
     return(cbind(empty, hos_day = integer(), sur_cnt = integer(), out_cnt = integer()))
@@ -73,12 +76,13 @@
   res[is.na(hos_day), hos_day := 0L]
   res[is.na(sur_cnt), sur_cnt := 0L]
   res[is.na(out_cnt), out_cnt := 0L]
+  setkeyv(res, by)
   res[]
 }
 
 #' Keep the lines treated within a month window of the inquiry
 #'
-#' Month arithmetic via [.minus_months()], not `window_mon * 30`: a day
+#' Month arithmetic via `.minus_months()`, not `window_mon * 30`: a day
 #' approximation drifts up to five days at 60 months, which is enough to move a
 #' line across a product boundary and make two products' results incomparable.
 #'
@@ -89,6 +93,9 @@
 #' @keywords internal
 .within_months <- function(dt, window_mon) {
   tdate <- inq_date <- NULL  # data.table NSE
-  if (is.na(window_mon)) return(dt[0L])
+  # an NA window selects nothing; an empty input has nothing to select and must
+  # short-circuit before .minus_months(), which errors on a zero-length date
+  # (it happens when every claim line is a sentinel, so the questions get 0 rows).
+  if (is.na(window_mon) || !nrow(dt)) return(dt[0L])
   dt[tdate >= .minus_months(inq_date, as.integer(window_mon))]
 }

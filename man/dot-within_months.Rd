@@ -16,7 +16,7 @@ no question over this window).}
 The subset of \code{dt} inside the window.
 }
 \description{
-Month arithmetic via \code{\link[=.minus_months]{.minus_months()}}, not \code{window_mon * 30}: a day
+Month arithmetic via \code{.minus_months()}, not \code{window_mon * 30}: a day
 approximation drifts up to five days at 60 months, which is enough to move a
 line across a product boundary and make two products' results incomparable.
 }

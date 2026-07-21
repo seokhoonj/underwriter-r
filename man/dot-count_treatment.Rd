@@ -4,15 +4,14 @@
 \alias{.count_treatment}
 \title{Count hospital days, surgeries, and outpatient visits per group}
 \usage{
-.count_treatment(dt, by = c("id", "kcd_main"))
+.count_treatment(dt)
 }
 \arguments{
 \item{dt}{Claim lines already tagged by \code{\link[=.tag_treatment]{.tag_treatment()}}.}
-
-\item{by}{Grouping columns (default \code{id}, \code{kcd_main}).}
 }
 \value{
-A \code{data.table} keyed on \code{by} with \code{hos_day}, \code{sur_cnt}, \code{out_cnt}.
+A \code{data.table} keyed on \code{id}, \code{kcd_main} with \code{hos_day}, \code{sur_cnt},
+\code{out_cnt}.
 }
 \description{
 \code{hos_day} is the dedup-union of hospital calendar days (\code{\link[instead:count_stay]{instead::count_stay()}}),

@@ -66,7 +66,7 @@ NULL
 # every column symbol the pipeline uses so the check stays clean.
 utils::globalVariables(c(
   # data.table specials / non-equi join refs used as bare symbols
-  ".", "i.kcd_main", "i.sub_chk", "i.lookback_mon", "i.age",
+  ".", "i.kcd_main", "i.sub_chk", "i.lookback_mon", "i.age", "i.kcd_n",
   # claim / cleansing columns
   "id", "gender", "age", "inq_date", "pay_date", "acc_date", "sdate", "edate",
   "hos_day", "sur_cnt", "kcd", "ord", "sub_kcd", "N",
