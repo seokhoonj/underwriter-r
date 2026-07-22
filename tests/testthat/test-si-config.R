@@ -26,6 +26,19 @@ test_that("si_product rejects a duplicated product row", {
   expect_error(si_product("325", rb), "exactly one")
 })
 
+test_that("si_product rejects a product with no ruleset rows", {
+  rb <- si_fixture_rulebook()
+  rb$ruleset <- rb$ruleset[si_type != "325"]       # strip every 325 band
+  expect_error(si_product("325", rb), "no rows")
+})
+
+test_that("si_product's care window falls back to critical_disease_mon when care_mon is NA", {
+  rb <- si_fixture_rulebook()
+  rb$product[si_type == "325", care_mon := NA_integer_]
+  pr <- si_product("325", rb)
+  expect_equal(pr$critical_disease_window("care"), pr$critical_disease_mon)
+})
+
 # --- load_si_rulebook()'s boundary checks, driven through the REAL loader: the
 # fixture is written out as a workbook and read back, so a broken guard fails the
 # test rather than passing a reimplementation of it. `si_write_fixture_workbook()`

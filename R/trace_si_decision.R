@@ -27,7 +27,10 @@ trace_si_decision <- function(mapped, id, rulebook, product,
   coverage <- dec <- reason <- question <- kcd_main <- answers <- final <- NULL  # NSE
   source <- match.arg(source)
 
-  one <- as.data.table(mapped)[mapped$id == id]
+  # `want_id`, not a bare `id`: inside a data.table `i` a bare `id` binds to the
+  # COLUMN, so `[mapped$id == id]` compares the column to itself and keeps every row.
+  want_id <- id
+  one <- as.data.table(mapped)[mapped$id == want_id]
   if (!nrow(one)) stop("no claim lines for id ", id)
 
   matched <- match_si_rule(one, rulebook, product, source)

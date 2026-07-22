@@ -181,6 +181,60 @@ test_that("combine_si_decision folds decline over underwriter over standard", {
   expect_equal(cb[coverage == "care", dec], "S")            # other coverage grid-fills
 })
 
+test_that("Q3 declines an inpatient critical disease", {
+  rb <- si_fixture_rulebook()
+  pr <- si_product("325", rb)
+  # C1 is critical (class 2 on life, 3 on care); a hospitalization declines on both
+  mapped <- si_line("A", "C1", "2025-06-01", elapsed = 100L, hos = 10L)
+  q3 <- match_si_rule(mapped, rb, pr)[question == "Q3"]
+
+  expect_setequal(q3$coverage, pr$coverages)
+  expect_true(all(q3$dec == "D"))
+  expect_true(all(q3$reason == "critical_disease"))
+})
+
+test_that("tabulate_si_decision and auto_rate summarize the decision distribution", {
+  rb <- si_fixture_rulebook()
+  pr <- si_product("325", rb)
+  mapped <- rbind(si_line("A", "D1", "2025-06-01", elapsed = 100L, hos = 40L),  # decline
+                  si_line("B", "D1", "2025-06-01", elapsed = 400L))              # standard
+  cb  <- combine_si_decision(match_si_rule(mapped, rb, pr), rb, pr)
+  tab <- tabulate_si_decision(cb, rb)
+
+  expect_setequal(names(tab), c("coverage", "decision", "name", "auto", "n", "prop"))
+  expect_equal(sum(tab$n), nrow(cb))
+  expect_equal(tab[, sum(prop), by = coverage]$V1,
+               rep(1, uniqueN(cb$coverage)), tolerance = 1e-9)
+  expect_equal(auto_rate(tab)$auto_rate, 100, tolerance = 1e-9)   # D and S both auto
+  expect_error(tabulate_si_decision(cb[0L], rb), "no rows")
+})
+
+test_that("list_si_rule_impact and list_si_decline_disease attribute declines", {
+  rb <- si_fixture_rulebook()
+  pr <- si_product("325", rb)
+  mapped <- si_line("A", "D1", "2025-06-01", elapsed = 100L, hos = 40L)  # hos_day_over
+  cb  <- combine_si_decision(match_si_rule(mapped, rb, pr), rb, pr)
+
+  imp <- list_si_rule_impact(cb, rb)
+  expect_true(all(imp$reason == "hos_day_over"))
+  expect_equal(sum(imp$n), nrow(cb[dec == "D"]))
+  dd <- list_si_decline_disease(cb)
+  expect_equal(dd$kcd_main, "D1")
+  expect_equal(sum(dd$n), nrow(cb[dec == "D"]))
+})
+
+test_that("trace_si_decision reruns the engine for one insured, one row per coverage", {
+  rb <- si_fixture_rulebook()
+  pr <- si_product("325", rb)
+  mapped <- si_line("A", "D1", "2025-06-01", elapsed = 100L, hos = 40L)
+  tr <- trace_si_decision(mapped, "A", rb, pr)
+
+  expect_setequal(tr$coverage, pr$coverages)
+  expect_true(all(tr$dec == "D"))
+  expect_true("answers" %in% names(tr))
+  expect_error(trace_si_decision(mapped, "NOPE", rb, pr), "no claim lines")
+})
+
 test_that("a missing band input declines rather than being laundered into accept", {
   rb <- si_fixture_rulebook()
   pr <- si_product("325", rb)

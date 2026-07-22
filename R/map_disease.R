@@ -85,6 +85,16 @@ map_disease <- function(melted, disease_table) {
 # 03-31 minus 1 month is 02-29, not 03-02 (which raw POSIXlt month subtraction
 # gives when the day overflows a shorter month). `n` may be `NA` (-> `NA`).
 .minus_months <- function(date, n) {
+  # The calendar round-trip below is the pipeline's hot path, and `date` is often a
+  # long claim-line vector with few distinct values (one inquiry date per insured).
+  # For a scalar `n`, dedupe first and map back: identical result, a fraction of the
+  # POSIXlt conversions. (A vector `n` -- map_disease's per-row lookback -- takes the
+  # direct path; it is not on the per-question hot loop.)
+  if (length(n) == 1L && length(date) > 1L) {
+    u <- unique(date)
+    if (length(u) < length(date))
+      return(.minus_months(u, n)[match(date, u)])
+  }
   lt <- as.POSIXlt(date)
   day <- lt$mday
   lt$mday <- 1L                          # first of month: month shift can't overflow

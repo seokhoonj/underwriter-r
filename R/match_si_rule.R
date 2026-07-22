@@ -256,6 +256,35 @@
 }
 
 
+# Settle the insureds in the roster who raised no question, so match_si_rule() holds
+# the whole population. They split by whether any history is still in reach:
+#  - aged out (every KNOWN in_5yr flag is 0): no reviewable history, so settle as the
+#    EXPIRED sentinel, its role read from the workbook.
+#  - otherwise -- usable in-window history that tripped nothing, OR no readable date
+#    (in_5yr all NA, e.g. a missing inquiry date, which must NOT drop the insured) --
+#    a presence row (no decision here) that combine settles at the baseline standard.
+# `max()` over a group with any NA would be NA and lose the insured from both sides,
+# so aged-out is judged on the known flags only.
+.settle_roster <- function(lines, roster_ids, product, code, sent) {
+  id <- in_5yr <- is_aged_out <- coverage <- kcd_main <- role <- NULL  # NSE
+  stopifnot("in_5yr" %in% names(lines))
+  age_status   <- lines[id %chin% roster_ids,
+                        .(is_aged_out = { v <- in_5yr[!is.na(in_5yr)]
+                                          length(v) > 0L && max(v) == 0L }), by = id]
+  expired_ids  <- age_status[is_aged_out == TRUE,  id]
+  presence_ids <- age_status[is_aged_out == FALSE, id]
+  rows <- list()
+  if (length(expired_ids))
+    rows$expired <- CJ(id = expired_ids, coverage = product$coverages)[
+      , .(question = "sentinel", id, coverage, kcd_main = .KCD_EXPIRED,
+          dec = unname(code[sent[kcd_main == .KCD_EXPIRED, role]]), reason = NA_character_)]
+  if (length(presence_ids))
+    rows$presence <- CJ(id = presence_ids, coverage = product$coverages)[
+      , .(question = NA_character_, id, coverage, kcd_main = NA_character_,
+          dec = NA_character_, reason = NA_character_)]
+  rbindlist(rows, use.names = TRUE)
+}
+
 #' Match mapped claim lines against a simplified-issue rule set
 #'
 #' The simplified-issue counterpart of [match_rule()]. Where the standard path
@@ -291,7 +320,7 @@
 #' @export
 match_si_rule <- function(mapped, rulebook, product,
                           source = c("icis", "declaration")) {
-  id <- kcd_main <- coverage <- role <- in_5yr <- is_aged_out <- NULL  # NSE
+  id <- kcd_main <- coverage <- role <- NULL  # NSE
   source  <- match.arg(source)
   lines   <- .tag_lines(mapped)
   code    <- rulebook$code
@@ -314,35 +343,10 @@ match_si_rule <- function(mapped, rulebook, product,
     use.names = TRUE, fill = TRUE, idcol = "question")
 
   # Every insured with no question answer is carried through, so match_si_rule()
-  # holds the whole roster and combine_si_decision() needs no external id list. The
-  # no-answer insureds split by whether any history is still in reach:
-  #  - aged out (every line outside the 5-year window): no reviewable history, so
-  #    settle as EXPIRED, a declared sentinel whose role the workbook sets.
-  #  - in-window but non-triggering: usable recent history that tripped nothing, a
-  #    presence row (no decision here) that combine settles at the baseline standard.
+  # holds the whole roster and combine_si_decision() needs no external id list.
   roster_ids <- setdiff(unique(lines$id), unique(answers$id))
-  if (length(roster_ids)) {
-    stopifnot("in_5yr" %in% names(lines))   # map_disease() must have flagged the window
-    # aged out iff every KNOWN in_5yr flag is 0; an insured with no readable date
-    # (in_5yr all NA, e.g. a missing inquiry date) is not aged out and not dropped --
-    # it falls to presence and the baseline standard. `max(NA_present)` alone would
-    # make the flag NA and lose the insured from both partitions.
-    age_status   <- lines[id %chin% roster_ids,
-                          .(is_aged_out = { v <- in_5yr[!is.na(in_5yr)]
-                                            length(v) > 0L && max(v) == 0L }), by = id]
-    expired_ids  <- age_status[is_aged_out == TRUE,  id]
-    presence_ids <- age_status[is_aged_out == FALSE, id]
-    roster_rows  <- list()
-    if (length(expired_ids))
-      roster_rows$expired <- CJ(id = expired_ids, coverage = product$coverages)[
-        , .(question = "sentinel", id, coverage, kcd_main = .KCD_EXPIRED,
-            dec = unname(code[sent[kcd_main == .KCD_EXPIRED, role]]),
-            reason = NA_character_)]
-    if (length(presence_ids))
-      roster_rows$presence <- CJ(id = presence_ids, coverage = product$coverages)[
-        , .(question = NA_character_, id, coverage, kcd_main = NA_character_,
-            dec = NA_character_, reason = NA_character_)]
-    answers <- rbind(answers, rbindlist(roster_rows, use.names = TRUE), use.names = TRUE)
-  }
+  if (length(roster_ids))
+    answers <- rbind(answers, .settle_roster(lines, roster_ids, product, code, sent),
+                     use.names = TRUE)
   answers[]
 }
