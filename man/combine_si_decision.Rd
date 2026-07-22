@@ -4,12 +4,10 @@
 \alias{combine_si_decision}
 \title{Combine the three questions' answers into one decision per coverage}
 \usage{
-combine_si_decision(matched, ids, rulebook, product)
+combine_si_decision(matched, rulebook, product)
 }
 \arguments{
-\item{matched}{Answers from \code{\link[=match_si_rule]{match_si_rule()}}.}
-
-\item{ids}{Every insured id in the input, so none is lost.}
+\item{matched}{Answers from \code{\link[=match_si_rule]{match_si_rule()}}, carrying every insured.}
 
 \item{rulebook}{A rulebook from \code{\link[=load_si_rulebook]{load_si_rulebook()}}.}
 
@@ -23,10 +21,11 @@ produced it, the \code{question} it came from, and the driving \code{kcd_main}.
 The simplified-issue counterpart of \code{\link[=combine_decision]{combine_decision()}}. Where the standard
 path composes eight codes through per-code combiners, this takes the worst of
 three by the \code{decision} sheet's \code{priority} (smaller is worse, so decline wins).
-Every insured x coverage the product sells gets a row whether or not any
-question raised anything: an insured with no claim history appears in no
-answer, and dropping them would shrink the denominator silently -- the same
-no-insured-left-behind invariant the standard path holds through its sentinels.
+Every insured x coverage the product sells gets a row: \code{\link[=match_si_rule]{match_si_rule()}} already
+carries the whole roster (an insured that tripped no question arrives as an
+explicit standard), so the id universe is read off \code{matched} -- the same
+no-insured-left-behind invariant the standard path holds through its sentinels,
+with no separate id list to pass.
 }
 \seealso{
 \code{\link[=match_si_rule]{match_si_rule()}}, \code{\link[=tabulate_si_decision]{tabulate_si_decision()}}.

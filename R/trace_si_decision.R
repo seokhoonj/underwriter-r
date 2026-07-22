@@ -31,7 +31,7 @@ trace_si_decision <- function(mapped, id, rulebook, product,
   if (!nrow(one)) stop("no claim lines for id ", id)
 
   matched <- match_si_rule(one, rulebook, product, source)
-  final   <- combine_si_decision(matched, id, rulebook, product)
+  final   <- combine_si_decision(matched, rulebook, product)
 
   # every answer this insured produced, per coverage, so the fold is legible
   ans <- matched[, .(answers = paste(sprintf("%s:%s", question, dec), collapse = " | ")),

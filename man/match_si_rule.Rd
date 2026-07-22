@@ -19,7 +19,8 @@ carries context ICIS cannot show (icis_spec 2.702 rows 138-145).}
 }
 \value{
 A \code{data.table}, one row per answer, with \code{question}
-(\code{Q1}/\code{Q2}/\code{Q3}/\code{sentinel}), \code{id}, \code{coverage}, \code{kcd_main}, \code{dec}, \code{reason}.
+(\code{Q1}/\code{Q2}/\code{Q3}/\code{sentinel}, or \code{NA} for an insured that tripped nothing),
+\code{id}, \code{coverage}, \code{kcd_main}, \code{dec}, \code{reason}.
 }
 \description{
 The simplified-issue counterpart of \code{\link[=match_rule]{match_rule()}}. Where the standard path
@@ -34,6 +35,11 @@ The four reserved sentinel codes (no diagnosis, all aged out, unreadable, not
 in the mapping table) are structural states, not diseases; putting them to the
 questions would decline an applicant for having no claim history. They are
 withheld from the questions and settled from the \code{ruleset_sentinel} sheet.
+
+Every insured is represented in the result: one who tripped no question is
+carried through as an explicit standard on every coverage (a \code{question}-\code{NA}
+row), not omitted. The result is therefore the whole roster, so
+\code{\link[=combine_si_decision]{combine_si_decision()}} folds it without a separate id list.
 }
 \seealso{
 \code{\link[=combine_si_decision]{combine_si_decision()}}, \code{\link[=si_product]{si_product()}}, \code{\link[=load_si_rulebook]{load_si_rulebook()}}.

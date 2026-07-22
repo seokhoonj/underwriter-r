@@ -17,10 +17,13 @@
 underwrite_si <- function(dt, disease_table, rulebook, product,
                           source = c("icis", "declaration"),
                           kcd_cols = paste0("kcd", 0:4)) {
-  cleaned <- filter_latest_inquiry(clean_icis(dt, kcd_cols))
-  mapped  <- map_disease(melt_kcd(cleaned), disease_table)
-  matched <- match_si_rule(mapped, rulebook, product, source)
-  # ids come from the raw input, not from `mapped`: an insured whose every claim
-  # line was dropped in cleansing must still appear in the result.
-  combine_si_decision(matched, unique(as.data.table(dt)$id), rulebook, product)
+  cleaned  <- filter_latest_inquiry(clean_icis(dt, kcd_cols))
+  mapped   <- map_disease(melt_kcd(cleaned), disease_table)
+  matched  <- match_si_rule(mapped, rulebook, product, source)
+  combined <- combine_si_decision(matched, rulebook, product)
+  # the cleansing sentinels (VACANT / IRREGULAR) preserve every id, so the roster
+  # that flowed through match_si_rule is the whole population; assert it rather
+  # than silently trusting it.
+  stopifnot(setequal(unique(combined$id), unique(as.data.table(dt)$id)))
+  combined
 }

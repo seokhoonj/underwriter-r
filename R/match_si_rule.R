@@ -270,6 +270,11 @@
 #' questions would decline an applicant for having no claim history. They are
 #' withheld from the questions and settled from the `ruleset_sentinel` sheet.
 #'
+#' Every insured is represented in the result: one who tripped no question is
+#' carried through as an explicit standard on every coverage (a `question`-`NA`
+#' row), not omitted. The result is therefore the whole roster, so
+#' [combine_si_decision()] folds it without a separate id list.
+#'
 #' @param mapped Mapped claim lines from [map_disease()].
 #' @param rulebook A rulebook from [load_si_rulebook()].
 #' @param product Product configuration from [si_product()].
@@ -277,7 +282,8 @@
 #'   history declines on claim data but only refers on a declaration, which
 #'   carries context ICIS cannot show (icis_spec 2.702 rows 138-145).
 #' @return A `data.table`, one row per answer, with `question`
-#'   (`Q1`/`Q2`/`Q3`/`sentinel`), `id`, `coverage`, `kcd_main`, `dec`, `reason`.
+#'   (`Q1`/`Q2`/`Q3`/`sentinel`, or `NA` for an insured that tripped nothing),
+#'   `id`, `coverage`, `kcd_main`, `dec`, `reason`.
 #' @seealso [combine_si_decision()], [si_product()], [load_si_rulebook()].
 #' @export
 match_si_rule <- function(mapped, rulebook, product,
@@ -297,10 +303,25 @@ match_si_rule <- function(mapped, rulebook, product,
       , .(id, coverage, kcd_main, dec = unname(code[role]), reason = NA_character_)]
   } else NULL
 
-  rbindlist(list(
+  answers <- rbindlist(list(
     Q1 = .assess_medical_advice(   lines[!is_sent], ruleset, product, code, source),
     Q2 = .assess_inpatient_surgery(lines[!is_sent], ruleset, product, code),
     Q3 = .assess_critical_disease( lines[!is_sent],          product, code),
     sentinel = sentinel_answer),
-    use.names = TRUE, fill = TRUE, idcol = "question")[]
+    use.names = TRUE, fill = TRUE, idcol = "question")
+
+  # An insured who tripped no question is not silently dropped for the caller to
+  # re-supply from a separate id list: they were evaluated and passed, so they are
+  # carried through here as an explicit standard on every coverage -- the same way
+  # the sentinel sheet carries the no-diagnosis insureds through. The pipeline
+  # preserves every id from raw to mapped (VACANT / IRREGULAR sentinels), so `lines`
+  # holds the whole roster and combine_si_decision() needs no external id list.
+  clean_id <- setdiff(unique(lines$id), unique(answers$id))
+  if (length(clean_id)) {
+    clean <- CJ(id = clean_id, coverage = product$coverages)[
+      , .(question = NA_character_, id, coverage, kcd_main = NA_character_,
+          dec = unname(code[["standard"]]), reason = NA_character_)]
+    answers <- rbind(answers, clean, use.names = TRUE)
+  }
+  answers[]
 }

@@ -10,21 +10,25 @@ test_that("an insured with no triggering history is accepted on every coverage",
   pr  <- si_product("325", rb)
   # D1 outpatient 400 days ago only: no recent visit, no admission -> no question
   mapped <- si_line("A", "D1", "2025-06-01", elapsed = 400L)
-  cb <- combine_si_decision(match_si_rule(mapped, rb, pr), "A", rb, pr)
+  cb <- combine_si_decision(match_si_rule(mapped, rb, pr), rb, pr)
 
   expect_setequal(cb$coverage, pr$coverages)
   expect_true(all(cb$dec == "S"))
 })
 
-test_that("no insured is left behind: a zero-history id still gets a row per coverage", {
+test_that("no insured is left behind: one who trips no question still gets standard per coverage", {
   rb <- si_fixture_rulebook()
   pr <- si_product("325", rb)
-  mapped <- si_line("A", "D1", "2025-06-01", elapsed = 400L)
-  # "B" has no claim line at all but is in the id universe
-  cb <- combine_si_decision(match_si_rule(mapped, rb, pr), c("A", "B"), rb, pr)
+  # A trips Q2 (admission over the band); B has only an old outpatient visit that
+  # trips nothing -- match_si_rule must carry B through as an explicit standard, so
+  # B still appears without any external id list.
+  mapped <- rbind(si_line("A", "D1", "2025-06-01", elapsed = 100L, hos = 40L),
+                  si_line("B", "D1", "2025-06-01", elapsed = 400L))
+  cb <- combine_si_decision(match_si_rule(mapped, rb, pr), rb, pr)
 
   expect_setequal(unique(cb$id), c("A", "B"))
-  expect_true(all(cb[id == "B", dec] == "S"))          # nothing asked -> accept
+  expect_true(all(cb[id == "B", dec] == "S"))          # nothing tripped -> standard
+  expect_true(all(cb[id == "A", dec] == "D"))          # admission over band -> decline
   expect_equal(nrow(cb), 2L * length(pr$coverages))
 })
 
@@ -104,7 +108,7 @@ test_that("sentinel codes are settled from the sheet, not put to the questions",
 
   expect_true(all(m$question == "sentinel"))       # no Q1/Q2/Q3 answer
   expect_false(any(m$reason == "no_rule", na.rm = TRUE))
-  cb <- combine_si_decision(m, c("A", "B"), rb, pr)
+  cb <- combine_si_decision(m, rb, pr)
   expect_true(all(cb[id == "A", dec] == "S"))       # VACANT -> standard
   expect_true(all(cb[id == "B", dec] == "U"))       # UNMAPPED -> underwriter
 })
@@ -124,7 +128,7 @@ test_that("combine_si_decision refuses an answer with no decision", {
   pr <- si_product("325", rb)
   bad <- data.table(question = "Q2", id = "A", coverage = "life",
                     kcd_main = "D1", dec = NA_character_, reason = NA_character_)
-  expect_error(combine_si_decision(bad, "A", rb, pr), "no decision")
+  expect_error(combine_si_decision(bad, rb, pr), "no decision")
 })
 
 test_that("the month window uses calendar arithmetic, not a 30-day approximation", {
@@ -192,7 +196,7 @@ test_that("a product with no inpatient-surgery window (305 family) asks no Q2", 
   mapped <- si_line("A", "D1", "2025-06-01", elapsed = 100L, hos = 40L)
   m <- match_si_rule(mapped, rb, pr)
 
-  expect_false(any(m$question == "Q2"))             # Q2 is simply not asked
+  expect_false("Q2" %in% m$question)                # Q2 is simply not asked
 })
 
 test_that("Q1 mixed recent-and-old outpatient history defers to the carve-out band", {

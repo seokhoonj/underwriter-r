@@ -3,27 +3,28 @@
 #' The simplified-issue counterpart of [combine_decision()]. Where the standard
 #' path composes eight codes through per-code combiners, this takes the worst of
 #' three by the `decision` sheet's `priority` (smaller is worse, so decline wins).
-#' Every insured x coverage the product sells gets a row whether or not any
-#' question raised anything: an insured with no claim history appears in no
-#' answer, and dropping them would shrink the denominator silently -- the same
-#' no-insured-left-behind invariant the standard path holds through its sentinels.
+#' Every insured x coverage the product sells gets a row: [match_si_rule()] already
+#' carries the whole roster (an insured that tripped no question arrives as an
+#' explicit standard), so the id universe is read off `matched` -- the same
+#' no-insured-left-behind invariant the standard path holds through its sentinels,
+#' with no separate id list to pass.
 #'
-#' @param matched Answers from [match_si_rule()].
-#' @param ids Every insured id in the input, so none is lost.
+#' @param matched Answers from [match_si_rule()], carrying every insured.
 #' @param rulebook A rulebook from [load_si_rulebook()].
 #' @param product Product configuration from [si_product()].
 #' @return A `data.table`, one row per `(id, coverage)`: `dec`, the `reason` that
 #'   produced it, the `question` it came from, and the driving `kcd_main`.
 #' @seealso [match_si_rule()], [tabulate_si_decision()].
 #' @export
-combine_si_decision <- function(matched, ids, rulebook, product) {
+combine_si_decision <- function(matched, rulebook, product) {
   id <- coverage <- dec <- .rank <- reason <- question <- kcd_main <- NULL  # NSE
   code <- rulebook$code
-  grid <- CJ(id = unique(ids), coverage = product$coverages, unique = TRUE)
   all  <- as.data.table(matched)
   if (!nrow(all))
-    return(grid[, .(id, coverage, dec = code[["standard"]], reason = NA_character_,
-                    question = NA_character_, kcd_main = NA_character_)])
+    return(data.table(id = all$id[0L], coverage = character(), dec = character(),
+                      reason = character(), question = character(),
+                      kcd_main = character()))
+  grid <- CJ(id = unique(all$id), coverage = product$coverages, unique = TRUE)
 
   all[, .rank := rulebook$rank[dec]]
   # An answer with no decision is an upstream bug, not an accept. Guard before the
