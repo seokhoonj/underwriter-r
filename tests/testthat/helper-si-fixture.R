@@ -115,7 +115,8 @@ si_write_fixture_workbook <- function(rb, path) {
 # One claim line in the shape map_disease() emits. `inq` is the inquiry date; each
 # treatment is dated `elapsed` days before it. `hos`/`sur` set the treatment type;
 # a line with neither is outpatient.
-si_line <- function(id, kcd_main, inq, elapsed, hos = 0L, sur = 0L, age = 40L) {
+si_line <- function(id, kcd_main, inq, elapsed, hos = 0L, sur = 0L, age = 40L,
+                    in_5yr = 1L) {
   tdate <- as.Date(inq) - elapsed
   data.table::data.table(
     id = as.character(id), gender = "1", age = as.numeric(age),
@@ -125,5 +126,6 @@ si_line <- function(id, kcd_main, inq, elapsed, hos = 0L, sur = 0L, age = 40L) {
     hos_day = as.numeric(hos), hos_cnt = if (hos > 0L) 1 else 0,
     sur_cnt = as.numeric(sur),
     kcd = kcd_main, sub_kcd = 0L, kcd_main = kcd_main,
-    sub_chk = 0, lookback_mon = 60, review = 1L, in_lookback = 1L, in_5yr = 1L)
+    sub_chk = 0, lookback_mon = 60, review = 1L, in_lookback = 1L,
+    in_5yr = as.integer(in_5yr))
 }

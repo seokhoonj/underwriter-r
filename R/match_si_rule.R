@@ -270,10 +270,13 @@
 #' questions would decline an applicant for having no claim history. They are
 #' withheld from the questions and settled from the `ruleset_sentinel` sheet.
 #'
-#' Every insured is represented in the result: one who tripped no question is
-#' carried through as an explicit standard on every coverage (a `question`-`NA`
-#' row), not omitted. The result is therefore the whole roster, so
-#' [combine_si_decision()] folds it without a separate id list.
+#' Every insured is represented in the result, so it is the whole roster and
+#' [combine_si_decision()] folds it without a separate id list. An insured that
+#' raised no question is carried through one of two ways: if every line is aged out
+#' of the 5-year window they are settled as the `EXPIRED` sentinel (its role from
+#' the workbook); otherwise -- usable, in-window history that tripped nothing --
+#' they are a `question`-`NA` presence row that combine settles at the baseline
+#' standard.
 #'
 #' @param mapped Mapped claim lines from [map_disease()].
 #' @param rulebook A rulebook from [load_si_rulebook()].
@@ -288,7 +291,7 @@
 #' @export
 match_si_rule <- function(mapped, rulebook, product,
                           source = c("icis", "declaration")) {
-  id <- kcd_main <- coverage <- role <- NULL  # NSE
+  id <- kcd_main <- coverage <- role <- in_5yr <- aged <- NULL  # NSE
   source  <- match.arg(source)
   lines   <- .tag_lines(mapped)
   code    <- rulebook$code
@@ -310,18 +313,29 @@ match_si_rule <- function(mapped, rulebook, product,
     sentinel = sentinel_answer),
     use.names = TRUE, fill = TRUE, idcol = "question")
 
-  # An insured who tripped no question is not silently dropped for the caller to
-  # re-supply from a separate id list: they were evaluated and passed, so they are
-  # carried through here as an explicit standard on every coverage -- the same way
-  # the sentinel sheet carries the no-diagnosis insureds through. The pipeline
-  # preserves every id from raw to mapped (VACANT / IRREGULAR sentinels), so `lines`
-  # holds the whole roster and combine_si_decision() needs no external id list.
-  clean_id <- setdiff(unique(lines$id), unique(answers$id))
-  if (length(clean_id)) {
-    clean <- CJ(id = clean_id, coverage = product$coverages)[
-      , .(question = NA_character_, id, coverage, kcd_main = NA_character_,
-          dec = unname(code[["standard"]]), reason = NA_character_)]
-    answers <- rbind(answers, clean, use.names = TRUE)
+  # Every insured with no question answer is carried through, so match_si_rule()
+  # holds the whole roster and combine_si_decision() needs no external id list. The
+  # no-answer insureds split by whether any history is still in reach:
+  #  - aged out (every line outside the 5-year window): no reviewable history, so
+  #    settle as EXPIRED, a declared sentinel whose role the workbook sets.
+  #  - in-window but non-triggering: usable recent history that tripped nothing, a
+  #    presence row (no decision here) that combine settles at the baseline standard.
+  roster_id <- setdiff(unique(lines$id), unique(answers$id))
+  if (length(roster_id)) {
+    aged    <- lines[id %chin% roster_id, .(aged = max(in_5yr) == 0L), by = id]
+    exp_id  <- aged[aged == TRUE,  id]
+    pres_id <- aged[aged == FALSE, id]
+    extra   <- list()
+    if (length(exp_id))
+      extra$expired <- CJ(id = exp_id, coverage = product$coverages)[
+        , .(question = "sentinel", id, coverage, kcd_main = .KCD_EXPIRED,
+            dec = unname(code[sent[kcd_main == .KCD_EXPIRED, role]]),
+            reason = NA_character_)]
+    if (length(pres_id))
+      extra$presence <- CJ(id = pres_id, coverage = product$coverages)[
+        , .(question = NA_character_, id, coverage, kcd_main = NA_character_,
+            dec = NA_character_, reason = NA_character_)]
+    answers <- rbind(answers, rbindlist(extra, use.names = TRUE), use.names = TRUE)
   }
   answers[]
 }

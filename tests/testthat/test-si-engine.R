@@ -113,6 +113,34 @@ test_that("sentinel codes are settled from the sheet, not put to the questions",
   expect_true(all(cb[id == "B", dec] == "U"))       # UNMAPPED -> underwriter
 })
 
+test_that("an insured whose every line is aged out is settled as EXPIRED", {
+  rb <- si_fixture_rulebook()
+  pr <- si_product("325", rb)
+  # every line outside the 5-year window (in_5yr = 0): no reviewable history, so the
+  # insured is settled as the EXPIRED sentinel, distinct from an in-window no-trigger
+  mapped <- si_line("A", "D1", "2025-06-01", elapsed = 2200L, in_5yr = 0L)
+  m <- match_si_rule(mapped, rb, pr)
+
+  expect_true(all(m$kcd_main == "EXPIRED"))          # aged-out sentinel, not a question
+  expect_true(all(m$question == "sentinel"))
+  cb <- combine_si_decision(m, rb, pr)
+  expect_true(all(cb$dec == "S"))                    # EXPIRED role = standard
+})
+
+test_that("aged-out (EXPIRED) and in-window no-trigger are distinguishable, both standard", {
+  rb <- si_fixture_rulebook()
+  pr <- si_product("325", rb)
+  # A: all history aged out -> EXPIRED;  B: recent-ish benign visit -> no-trigger presence
+  mapped <- rbind(si_line("A", "D1", "2025-06-01", elapsed = 2200L, in_5yr = 0L),
+                  si_line("B", "D1", "2025-06-01", elapsed = 200L,  in_5yr = 1L))
+  m <- match_si_rule(mapped, rb, pr)
+
+  expect_true(all(m[id == "A", kcd_main] == "EXPIRED"))   # aged out
+  expect_true(all(is.na(m[id == "B", question])))          # in-window, no question
+  cb <- combine_si_decision(m, rb, pr)
+  expect_true(all(cb$dec == "S"))                          # both accept, different reasons
+})
+
 test_that("a missing band input declines rather than being laundered into accept", {
   rb <- si_fixture_rulebook()
   pr <- si_product("325", rb)

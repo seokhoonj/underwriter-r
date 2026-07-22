@@ -36,10 +36,13 @@ in the mapping table) are structural states, not diseases; putting them to the
 questions would decline an applicant for having no claim history. They are
 withheld from the questions and settled from the \code{ruleset_sentinel} sheet.
 
-Every insured is represented in the result: one who tripped no question is
-carried through as an explicit standard on every coverage (a \code{question}-\code{NA}
-row), not omitted. The result is therefore the whole roster, so
-\code{\link[=combine_si_decision]{combine_si_decision()}} folds it without a separate id list.
+Every insured is represented in the result, so it is the whole roster and
+\code{\link[=combine_si_decision]{combine_si_decision()}} folds it without a separate id list. An insured that
+raised no question is carried through one of two ways: if every line is aged out
+of the 5-year window they are settled as the \code{EXPIRED} sentinel (its role from
+the workbook); otherwise -- usable, in-window history that tripped nothing --
+they are a \code{question}-\code{NA} presence row that combine settles at the baseline
+standard.
 }
 \seealso{
 \code{\link[=combine_si_decision]{combine_si_decision()}}, \code{\link[=si_product]{si_product()}}, \code{\link[=load_si_rulebook]{load_si_rulebook()}}.

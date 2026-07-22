@@ -71,6 +71,13 @@ load_si_rulebook <- function(path) {
     stop("`ruleset_sentinel` names role(s) absent from `decision`: ",
          paste(bad_role, collapse = ", "))
 
+  # the engine settles the four structural states (incl. EXPIRED, which it assigns
+  # to aged-out insureds) from this sheet, so all four must carry a role here
+  missing_sentinel <- setdiff(.KCD_SENTINELS, rb$sentinel$kcd_main)
+  if (length(missing_sentinel))
+    stop("`ruleset_sentinel` is missing sentinel(s) the engine settles: ",
+         paste(missing_sentinel, collapse = ", "))
+
   # a repeated role or code letter would make the lookups below pick one silently
   if (anyDuplicated(rb$decision$role) || anyDuplicated(rb$decision$code))
     stop("`decision` sheet repeats a role or a code; each must be unique.")

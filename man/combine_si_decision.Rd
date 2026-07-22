@@ -22,10 +22,11 @@ The simplified-issue counterpart of \code{\link[=combine_decision]{combine_decis
 path composes eight codes through per-code combiners, this takes the worst of
 three by the \code{decision} sheet's \code{priority} (smaller is worse, so decline wins).
 Every insured x coverage the product sells gets a row: \code{\link[=match_si_rule]{match_si_rule()}} already
-carries the whole roster (an insured that tripped no question arrives as an
-explicit standard), so the id universe is read off \code{matched} -- the same
+carries the whole roster, so the id universe is read off \code{matched} -- the same
 no-insured-left-behind invariant the standard path holds through its sentinels,
-with no separate id list to pass.
+with no separate id list to pass. Presence rows (no question, no decision) seed
+the roster only; a grid cell left with no answer is the baseline standard, a
+no-applicable-condition accept.
 }
 \seealso{
 \code{\link[=match_si_rule]{match_si_rule()}}, \code{\link[=tabulate_si_decision]{tabulate_si_decision()}}.
