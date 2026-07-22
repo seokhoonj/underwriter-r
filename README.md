@@ -6,11 +6,13 @@
 
 Automated underwriting simulation from insurance claim history. A data.table
 pipeline that cleanses claim data, maps diagnosis codes to representative
-diseases, aggregates per-insured underwriting inputs, matches them against a rule
-set, and combines the per-disease decisions into a final per-insured decision.
+diseases, and decides each insured -- for standard products by matching a rule set
+of per-disease bands, and for simplified-issue products by evaluating the three
+application-form questions. The front end is shared; the two paths fork at matching.
 
-The engine is data-agnostic: the rule set, decision-code table, and period bands
-are supplied at run time, so it is not tied to any one insurer.
+The engine is data-agnostic: the rule set, decision codes, period bands, and
+simplified-issue workbook are supplied at run time, so it is not tied to any one
+insurer.
 
 ## Install
 
@@ -19,7 +21,7 @@ are supplied at run time, so it is not tied to any one insurer.
 remotes::install_github("seokhoonj/underwriter-r")
 ```
 
-## Pipeline
+## Standard pipeline
 
 ```r
 library(underwriter)
@@ -30,14 +32,35 @@ mapped     <- map_disease(melted, disease)            # code -> representative d
 aggregated <- aggregate_disease(mapped)               # aggregate per-insured inputs
 matched    <- match_rule(aggregated, ruleset)         # band-match the rule set
 applied    <- matched$applied
-combined   <- combine_decision(applied, decision_table, exclusion_table, reduction_table, loading_table)
+combined   <- combine_decision(applied, rulebook)     # rulebook = decision/exclusion/reduction/loading
 ```
 
 `combined` is one row per insured, one column per coverage, holding the final
 decision code; the config tables ride along as attributes. Every insured in the
-claim feed gets a row: one with nothing to underwrite -- no diagnosis code, or
-every diagnosis aged out of its lookback window -- carries the reserved `AAA`
-code, and the rule set decides them like any other.
+claim feed gets a row: one with nothing to underwrite carries a reserved sentinel
+code -- `VACANT` (no diagnosis), `IRREGULAR` (unreadable), `UNMAPPED` (not in the
+mapping), or `EXPIRED` (every diagnosis aged out of its window) -- and the rule set
+decides them like any other, so no insured is lost.
+
+## Simplified-issue (간편)
+
+Simplified-issue products underwrite from three application-form questions rather
+than a per-disease rule set, so the fork happens at matching. Everything is driven
+by one workbook.
+
+```r
+rulebook <- load_si_rulebook("rulebook_si.xlsx")           # seven sheets, validated
+product  <- si_product("325", rulebook)                    # one product's windows + coverages
+combined <- underwrite_si(raw, disease, rulebook, product) # raw claims -> decision
+```
+
+Each insured x coverage is decided by the worst of the three questions
+(decline > underwriter > standard). `underwrite_si` runs the whole chain;
+`match_si_rule` and `combine_si_decision` are the pieces. Every accept carries its
+reason -- a carve-out, aged-out history (`EXPIRED`), no diagnosis (`VACANT`), or no
+applicable condition. Summaries mirror the standard path: `tabulate_si_decision` /
+`auto_rate`, `list_si_rule_impact`, `list_si_decline_disease`,
+`diagnose_si_ruleset`, and `trace_si_decision`.
 
 ## Summaries
 
