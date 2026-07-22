@@ -15,7 +15,7 @@ match_si_rule(mapped, rulebook, product, source = c("icis", "declaration"))
 
 \item{source}{\code{"icis"} (claim history alone) or \code{"declaration"}. Q1's recent
 history declines on claim data but only refers on a declaration, which
-carries context ICIS cannot show (icis_spec 2.702 rows 138-145).}
+carries context claim history alone cannot show.}
 }
 \value{
 A \code{data.table}, one row per answer, with \code{question}

@@ -26,8 +26,10 @@ Besides the sheets it adds three derived lookups the engine relies on: \code{cod
 (role -> code letter), \code{rank} (code letter -> priority, lower is worse), and
 \code{auto} (code letter -> 1 automated / 0 referred). Validation fails loudly at
 the boundary rather than deep in the engine: a duplicated band key, a missing
-role, a reason key with no wording, or a \code{priority} that does not order
-decline worst all stop here, where the cause is visible.
+role, a reason key with no wording, a \code{priority} that does not order decline
+worst, or a \code{ruleset_sentinel} that is missing or repeats a reserved sentinel
+code (the engine assigns \code{EXPIRED} and settles all four by role) all stop here,
+where the cause is visible.
 }
 \seealso{
 \code{\link[=si_product]{si_product()}}, \code{\link[=match_si_rule]{match_si_rule()}}, \code{\link[=combine_si_decision]{combine_si_decision()}}.

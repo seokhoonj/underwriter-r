@@ -26,7 +26,7 @@ rulebook and is passed in here.}
 
 \item{source}{\code{"icis"} (claim history alone) or \code{"declaration"}. Q1's recent
 history declines on claim data but only refers on a declaration, which
-carries context ICIS cannot show (icis_spec 2.702 rows 138-145).}
+carries context claim history alone cannot show.}
 
 \item{kcd_cols}{Diagnosis-code columns of \code{dt}.}
 }

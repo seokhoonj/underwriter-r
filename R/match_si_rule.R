@@ -283,7 +283,7 @@
 #' @param product Product configuration from [si_product()].
 #' @param source `"icis"` (claim history alone) or `"declaration"`. Q1's recent
 #'   history declines on claim data but only refers on a declaration, which
-#'   carries context ICIS cannot show (icis_spec 2.702 rows 138-145).
+#'   carries context claim history alone cannot show.
 #' @return A `data.table`, one row per answer, with `question`
 #'   (`Q1`/`Q2`/`Q3`/`sentinel`, or `NA` for an insured that tripped nothing),
 #'   `id`, `coverage`, `kcd_main`, `dec`, `reason`.
@@ -291,7 +291,7 @@
 #' @export
 match_si_rule <- function(mapped, rulebook, product,
                           source = c("icis", "declaration")) {
-  id <- kcd_main <- coverage <- role <- in_5yr <- aged <- NULL  # NSE
+  id <- kcd_main <- coverage <- role <- in_5yr <- is_aged_out <- NULL  # NSE
   source  <- match.arg(source)
   lines   <- .tag_lines(mapped)
   code    <- rulebook$code
@@ -320,22 +320,29 @@ match_si_rule <- function(mapped, rulebook, product,
   #    settle as EXPIRED, a declared sentinel whose role the workbook sets.
   #  - in-window but non-triggering: usable recent history that tripped nothing, a
   #    presence row (no decision here) that combine settles at the baseline standard.
-  roster_id <- setdiff(unique(lines$id), unique(answers$id))
-  if (length(roster_id)) {
-    aged    <- lines[id %chin% roster_id, .(aged = max(in_5yr) == 0L), by = id]
-    exp_id  <- aged[aged == TRUE,  id]
-    pres_id <- aged[aged == FALSE, id]
-    extra   <- list()
-    if (length(exp_id))
-      extra$expired <- CJ(id = exp_id, coverage = product$coverages)[
+  roster_ids <- setdiff(unique(lines$id), unique(answers$id))
+  if (length(roster_ids)) {
+    stopifnot("in_5yr" %in% names(lines))   # map_disease() must have flagged the window
+    # aged out iff every KNOWN in_5yr flag is 0; an insured with no readable date
+    # (in_5yr all NA, e.g. a missing inquiry date) is not aged out and not dropped --
+    # it falls to presence and the baseline standard. `max(NA_present)` alone would
+    # make the flag NA and lose the insured from both partitions.
+    age_status   <- lines[id %chin% roster_ids,
+                          .(is_aged_out = { v <- in_5yr[!is.na(in_5yr)]
+                                            length(v) > 0L && max(v) == 0L }), by = id]
+    expired_ids  <- age_status[is_aged_out == TRUE,  id]
+    presence_ids <- age_status[is_aged_out == FALSE, id]
+    roster_rows  <- list()
+    if (length(expired_ids))
+      roster_rows$expired <- CJ(id = expired_ids, coverage = product$coverages)[
         , .(question = "sentinel", id, coverage, kcd_main = .KCD_EXPIRED,
             dec = unname(code[sent[kcd_main == .KCD_EXPIRED, role]]),
             reason = NA_character_)]
-    if (length(pres_id))
-      extra$presence <- CJ(id = pres_id, coverage = product$coverages)[
+    if (length(presence_ids))
+      roster_rows$presence <- CJ(id = presence_ids, coverage = product$coverages)[
         , .(question = NA_character_, id, coverage, kcd_main = NA_character_,
             dec = NA_character_, reason = NA_character_)]
-    answers <- rbind(answers, rbindlist(extra, use.names = TRUE), use.names = TRUE)
+    answers <- rbind(answers, rbindlist(roster_rows, use.names = TRUE), use.names = TRUE)
   }
   answers[]
 }

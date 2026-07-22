@@ -77,3 +77,18 @@ test_that("load_si_rulebook rejects a reason key with no wording", {
     load_bad(function(rb) { rb$reason[reason == "no_rule", reason_ko := NA_character_]; rb }),
     "no reason_ko wording")
 })
+
+test_that("load_si_rulebook rejects a workbook missing a reserved sentinel", {
+  # the engine assigns EXPIRED and settles all four sentinels by role, so a sheet
+  # that omits one must fail at the boundary, not deep in the engine
+  expect_error(
+    load_bad(function(rb) { rb$sentinel <- rb$sentinel[kcd_main != "EXPIRED"]; rb }),
+    "missing sentinel")
+})
+
+test_that("load_si_rulebook rejects a duplicated sentinel code", {
+  expect_error(
+    load_bad(function(rb) {
+      rb$sentinel <- rbind(rb$sentinel, rb$sentinel[kcd_main == "EXPIRED"]); rb }),
+    "repeats a kcd_main")
+})

@@ -27,8 +27,10 @@
 #' (role -> code letter), `rank` (code letter -> priority, lower is worse), and
 #' `auto` (code letter -> 1 automated / 0 referred). Validation fails loudly at
 #' the boundary rather than deep in the engine: a duplicated band key, a missing
-#' role, a reason key with no wording, or a `priority` that does not order
-#' decline worst all stop here, where the cause is visible.
+#' role, a reason key with no wording, a `priority` that does not order decline
+#' worst, or a `ruleset_sentinel` that is missing or repeats a reserved sentinel
+#' code (the engine assigns `EXPIRED` and settles all four by role) all stop here,
+#' where the cause is visible.
 #'
 #' @param path Path to the rulebook workbook (`.xlsx`).
 #' @return A named list with the sheet tables `product`, `coverage`, `decision`,
@@ -40,14 +42,14 @@
 load_si_rulebook <- function(path) {
   si_type <- coverage <- kcd_main <- class <- critical_disease_set <- N <- NULL  # NSE
 
-  sh <- function(s) as.data.table(suppressWarnings(readxl::read_excel(path, sheet = s)))
-  rb <- list(product          = sh("product"),
-             coverage         = sh("coverage"),
-             decision         = sh("decision"),
-             ruleset          = sh("ruleset"),
-             sentinel         = sh("ruleset_sentinel"),
-             critical_disease = sh("critical_disease"),
-             reason           = sh("reason"))
+  read_sheet <- function(s) as.data.table(suppressWarnings(readxl::read_excel(path, sheet = s)))
+  rb <- list(product          = read_sheet("product"),
+             coverage         = read_sheet("coverage"),
+             decision         = read_sheet("decision"),
+             ruleset          = read_sheet("ruleset"),
+             sentinel         = read_sheet("ruleset_sentinel"),
+             critical_disease = read_sheet("critical_disease"),
+             reason           = read_sheet("reason"))
 
   missing_role <- setdiff(.SI_ROLES, rb$decision$role)
   if (length(missing_role))
@@ -77,6 +79,11 @@ load_si_rulebook <- function(path) {
   if (length(missing_sentinel))
     stop("`ruleset_sentinel` is missing sentinel(s) the engine settles: ",
          paste(missing_sentinel, collapse = ", "))
+
+  # each sentinel is looked up expecting one role; a repeat would make the lookup
+  # return two, doubling every sentinel answer and mis-recycling the decision column
+  if (anyDuplicated(rb$sentinel$kcd_main))
+    stop("`ruleset_sentinel` repeats a kcd_main; each sentinel must be unique.")
 
   # a repeated role or code letter would make the lookups below pick one silently
   if (anyDuplicated(rb$decision$role) || anyDuplicated(rb$decision$code))

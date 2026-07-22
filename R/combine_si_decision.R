@@ -20,18 +20,18 @@
 combine_si_decision <- function(matched, rulebook, product) {
   id <- coverage <- dec <- .rank <- reason <- question <- kcd_main <- NULL  # NSE
   code <- rulebook$code
-  all  <- as.data.table(matched)
-  if (!nrow(all))
-    return(data.table(id = all$id[0L], coverage = character(), dec = character(),
+  matched_dt <- as.data.table(matched)
+  if (!nrow(matched_dt))
+    return(data.table(id = matched_dt$id[0L], coverage = character(), dec = character(),
                       reason = character(), question = character(),
                       kcd_main = character()))
-  grid <- CJ(id = unique(all$id), coverage = product$coverages, unique = TRUE)
+  grid <- CJ(id = unique(matched_dt$id), coverage = product$coverages, unique = TRUE)
 
   # Presence rows (no question, no decision) only seed the roster; a real answer
   # with a missing decision is still an upstream bug. Guard the answers before the
   # fold: setorder puts NA first (na.last = FALSE), so an NA `.rank` would win the
   # worst-pick and then be filled to standard below -- laundering a broken answer.
-  ans <- all[!is.na(question)]
+  ans <- matched_dt[!is.na(question)]
   ans[, .rank := rulebook$rank[dec]]
   if (anyNA(ans$dec) || anyNA(ans$.rank))
     stop("`matched` carries ", sum(is.na(ans$dec) | is.na(ans$.rank)),

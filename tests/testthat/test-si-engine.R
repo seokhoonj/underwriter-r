@@ -141,6 +141,46 @@ test_that("aged-out (EXPIRED) and in-window no-trigger are distinguishable, both
   expect_true(all(cb$dec == "S"))                          # both accept, different reasons
 })
 
+test_that("the aged-out (EXPIRED) decision honors the workbook role, not a hardcoded standard", {
+  rb <- si_fixture_rulebook()
+  rb$sentinel[kcd_main == "EXPIRED", role := "underwriter"]  # route aged-out to review
+  pr <- si_product("325", rb)
+  mapped <- si_line("A", "D1", "2025-06-01", elapsed = 2200L, in_5yr = 0L)
+  cb <- combine_si_decision(match_si_rule(mapped, rb, pr), rb, pr)
+
+  expect_true(all(cb$dec == "U"))                    # follows EXPIRED role = underwriter
+})
+
+test_that("an insured with any in-window line is not aged out (EXPIRED needs every line aged)", {
+  rb <- si_fixture_rulebook()
+  pr <- si_product("325", rb)
+  # one aged-out line and one in-window benign line -> max(in_5yr) = 1 -> not EXPIRED
+  mapped <- rbind(si_line("A", "D1", "2025-06-01", elapsed = 2200L, in_5yr = 0L),
+                  si_line("A", "D1", "2025-06-01", elapsed = 200L,  in_5yr = 1L))
+  m <- match_si_rule(mapped, rb, pr)
+
+  expect_false(any(m$kcd_main == "EXPIRED", na.rm = TRUE))  # not aged out
+  expect_true(all(is.na(m[id == "A", question])))            # in-window presence
+  expect_true(all(combine_si_decision(m, rb, pr)$dec == "S"))
+})
+
+test_that("combine_si_decision folds decline over underwriter over standard", {
+  rb <- si_fixture_rulebook()
+  pr <- si_product("325", rb)
+  # one cell carrying all three outcomes at once -> worst (D) wins, with its provenance
+  matched <- data.table(
+    question = c("Q1", "Q2", "Q3"), id = "A", coverage = "life",
+    kcd_main = c("D1", "D1", "C1"),
+    dec      = c("S", "U", "D"),
+    reason   = c(NA_character_, NA_character_, "critical_disease"))
+  cb <- combine_si_decision(matched, rb, pr)
+
+  expect_equal(cb[coverage == "life", dec], "D")            # decline wins the fold
+  expect_equal(cb[coverage == "life", question], "Q3")      # provenance follows the winner
+  expect_equal(cb[coverage == "life", reason], "critical_disease")
+  expect_equal(cb[coverage == "care", dec], "S")            # other coverage grid-fills
+})
+
 test_that("a missing band input declines rather than being laundered into accept", {
   rb <- si_fixture_rulebook()
   pr <- si_product("325", rb)
