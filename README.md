@@ -42,7 +42,7 @@ code -- `VACANT` (no diagnosis), `IRREGULAR` (unreadable), `UNMAPPED` (not in th
 mapping), or `EXPIRED` (every diagnosis aged out of its window) -- and the rule set
 decides them like any other, so no insured is lost.
 
-## Simplified-issue (간편)
+## Simplified-issue
 
 Simplified-issue products underwrite from three application-form questions rather
 than a per-disease rule set, so the fork happens at matching. Everything is driven
