@@ -4,12 +4,12 @@
 \alias{list_si_rule_impact}
 \title{List what drives simplified-issue declines, by question and reason}
 \usage{
-list_si_rule_impact(combined, rulebook, coverage = NULL)
+list_si_rule_impact(combined, coverage = NULL)
 }
 \arguments{
-\item{combined}{The per-\verb{(id, coverage)} table from \code{\link[=combine_si_decision]{combine_si_decision()}}.}
-
-\item{rulebook}{A rulebook from \code{\link[=load_si_rulebook]{load_si_rulebook()}}.}
+\item{combined}{The per-\verb{(id, coverage)} table from \code{\link[=combine_si_decision]{combine_si_decision()}},
+which carries the \code{reason} sheet as its \code{reason_table} attribute -- so the
+wording comes from the workbook and no rulebook is passed.}
 
 \item{coverage}{Optional coverage(s) to restrict to; \code{NULL} for all.}
 }

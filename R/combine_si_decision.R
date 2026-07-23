@@ -14,7 +14,10 @@
 #' @param rulebook A rulebook from [load_si_rulebook()].
 #' @param product Product configuration from [si_product()].
 #' @return A `data.table`, one row per `(id, coverage)`: `dec`, the `reason` that
-#'   produced it, the `question` it came from, and the driving `kcd_main`.
+#'   produced it, the `question` it came from, and the driving `kcd_main`. The
+#'   `decision` and `reason` sheets ride along as the `decision_table` and
+#'   `reason_table` attributes, so [tabulate_si_decision()] and
+#'   [list_si_rule_impact()] read them without a rulebook argument.
 #' @seealso [match_si_rule()], [tabulate_si_decision()].
 #' @export
 combine_si_decision <- function(matched, rulebook, product) {
@@ -47,5 +50,10 @@ combine_si_decision <- function(matched, rulebook, product) {
   out <- worst[grid, on = .(id, coverage)]
   out[is.na(dec), dec := code[["standard"]]]
   setorder(out, id, coverage)
+  # the config the reporting verbs read rides along as attributes, so
+  # tabulate_si_decision() and list_si_rule_impact() take no rulebook -- the same
+  # way combine_decision() carries the standard path's tables on `combined`.
+  setattr(out, "decision_table", rulebook$decision)
+  setattr(out, "reason_table",   rulebook$reason)
   out[]
 }

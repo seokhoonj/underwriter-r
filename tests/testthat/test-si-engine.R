@@ -199,14 +199,14 @@ test_that("tabulate_si_decision and auto_rate summarize the decision distributio
   mapped <- rbind(si_line("A", "D1", "2025-06-01", elapsed = 100L, hos = 40L),  # decline
                   si_line("B", "D1", "2025-06-01", elapsed = 400L))              # standard
   cb  <- combine_si_decision(match_si_rule(mapped, rb, pr), rb, pr)
-  tab <- tabulate_si_decision(cb, rb)
+  tab <- tabulate_si_decision(cb)
 
   expect_setequal(names(tab), c("coverage", "decision", "name", "auto", "n", "prop"))
   expect_equal(sum(tab$n), nrow(cb))
   expect_equal(tab[, sum(prop), by = coverage]$V1,
                rep(1, uniqueN(cb$coverage)), tolerance = 1e-9)
   expect_equal(auto_rate(tab)$auto_rate, 100, tolerance = 1e-9)   # D and S both auto
-  expect_error(tabulate_si_decision(cb[0L], rb), "no rows")
+  expect_error(tabulate_si_decision(cb[0L]), "no rows")
 })
 
 test_that("list_si_rule_impact and list_si_decline_disease attribute declines", {
@@ -215,7 +215,7 @@ test_that("list_si_rule_impact and list_si_decline_disease attribute declines", 
   mapped <- si_line("A", "D1", "2025-06-01", elapsed = 100L, hos = 40L)  # hos_day_over
   cb  <- combine_si_decision(match_si_rule(mapped, rb, pr), rb, pr)
 
-  imp <- list_si_rule_impact(cb, rb)
+  imp <- list_si_rule_impact(cb)
   expect_true(all(imp$reason == "hos_day_over"))
   expect_equal(sum(imp$n), nrow(cb[dec == "D"]))
   dd <- list_si_decline_disease(cb)

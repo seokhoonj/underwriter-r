@@ -6,7 +6,7 @@
 \alias{underwriter-package}
 \title{underwriter: Automated Underwriting from Insurance Claim History}
 \description{
-A data.table pipeline that cleanses insurance claim history, maps diagnosis codes to representative diseases, aggregates per-insured underwriting inputs, matches them against a rule set, and combines the per-disease decisions into a final per-insured underwriting decision. The engine is data-agnostic: rule sets and decision-code tables are supplied at run time, so it is not tied to any one insurer.
+A data.table pipeline that cleanses insurance claim history, maps diagnosis codes to representative diseases, and decides each insured: standard products by matching a rule set of per-disease bands, and simplified-issue products by evaluating the three application-form questions. The engine is data-agnostic: rule sets, decision-code tables, and the simplified-issue workbook are supplied at run time, so it is not tied to any one insurer.
 }
 \author{
 \strong{Maintainer}: Seokhoon Joo \email{seokhoonj@gmail.com}

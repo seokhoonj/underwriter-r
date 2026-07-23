@@ -10,22 +10,27 @@
 #'
 #' The simplified-issue counterpart of [tabulate_decision()].
 #'
-#' @param combined The per-`(id, coverage)` table from [combine_si_decision()].
-#' @param rulebook A rulebook from [load_si_rulebook()]; supplies the `decision`
-#'   sheet's names and `auto` flag, so what counts as automated is a workbook cell
-#'   rather than a literal here.
+#' @param combined The per-`(id, coverage)` table from [combine_si_decision()],
+#'   which carries the `decision` sheet as its `decision_table` attribute -- so the
+#'   decision names and `auto` flag come from the workbook, not a literal here, and
+#'   no rulebook is passed.
 #' @return A `data.table` with `coverage`, `decision`, `name`, `auto`, `n`,
 #'   `prop`, ordered by coverage and descending count.
 #' @seealso [tabulate_decision()], [auto_rate()], [combine_si_decision()].
 #' @export
-tabulate_si_decision <- function(combined, rulebook) {
+tabulate_si_decision <- function(combined) {
   coverage <- dec <- decision <- n <- auto <- name <- prop <- NULL  # NSE
   dt <- as.data.table(combined)
   if (!nrow(dt)) stop("`combined` has no rows to tabulate.")
+  decision_table <- attr(combined, "decision_table")
+  if (is.null(decision_table))
+    stop("`combined` has no `decision_table` attribute; produce it with combine_si_decision().")
+  name_of <- setNames(decision_table$name, decision_table$code)
+  auto_of <- setNames(as.integer(decision_table$auto), decision_table$code)
 
   out <- dt[, .(n = .N), by = .(coverage, decision = dec)]
-  out[, name := setNames(rulebook$decision$name, rulebook$decision$code)[decision]]
-  out[, auto := factor(rulebook$auto[decision], levels = c(0L, 1L))]
+  out[, name := name_of[decision]]
+  out[, auto := factor(auto_of[decision], levels = c(0L, 1L))]
   out[, prop := n / sum(n), by = coverage]
   setcolorder(out, c("coverage", "decision", "name", "auto", "n", "prop"))
   setorder(out, coverage, -n)

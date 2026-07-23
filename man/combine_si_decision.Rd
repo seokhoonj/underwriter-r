@@ -15,7 +15,10 @@ combine_si_decision(matched, rulebook, product)
 }
 \value{
 A \code{data.table}, one row per \verb{(id, coverage)}: \code{dec}, the \code{reason} that
-produced it, the \code{question} it came from, and the driving \code{kcd_main}.
+produced it, the \code{question} it came from, and the driving \code{kcd_main}. The
+\code{decision} and \code{reason} sheets ride along as the \code{decision_table} and
+\code{reason_table} attributes, so \code{\link[=tabulate_si_decision]{tabulate_si_decision()}} and
+\code{\link[=list_si_rule_impact]{list_si_rule_impact()}} read them without a rulebook argument.
 }
 \description{
 The simplified-issue counterpart of \code{\link[=combine_decision]{combine_decision()}}. Where the standard

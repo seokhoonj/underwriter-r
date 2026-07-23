@@ -11,14 +11,15 @@
 #' The engine speaks reason keys; the wording (`reason_ko`) is joined from the
 #' workbook, so the package source stays ASCII and a rewording is a cell edit.
 #'
-#' @param combined The per-`(id, coverage)` table from [combine_si_decision()].
-#' @param rulebook A rulebook from [load_si_rulebook()].
+#' @param combined The per-`(id, coverage)` table from [combine_si_decision()],
+#'   which carries the `reason` sheet as its `reason_table` attribute -- so the
+#'   wording comes from the workbook and no rulebook is passed.
 #' @param coverage Optional coverage(s) to restrict to; `NULL` for all.
 #' @return A `data.table` of `question`, `reason`, `reason_ko`, `n`, `share`
 #'   (percent of declines), ordered by descending count.
 #' @seealso [list_rule_impact()], [list_si_decline_disease()].
 #' @export
-list_si_rule_impact <- function(combined, rulebook, coverage = NULL) {
+list_si_rule_impact <- function(combined, coverage = NULL) {
   reason <- question <- n <- reason_ko <- share <- NULL  # NSE
   dt <- as.data.table(combined)
   if (!is.null(coverage)) dt <- dt[dt$coverage %chin% coverage]
@@ -26,9 +27,12 @@ list_si_rule_impact <- function(combined, rulebook, coverage = NULL) {
   if (!nrow(declined))
     return(data.table(question = character(), reason = character(),
                       reason_ko = character(), n = integer(), share = numeric()))
+  reason_table <- attr(combined, "reason_table")
+  if (is.null(reason_table))
+    stop("`combined` has no `reason_table` attribute; produce it with combine_si_decision().")
 
   out <- declined[, .(n = .N), by = .(question, reason)]
-  out[, reason_ko := setNames(rulebook$reason$reason_ko, rulebook$reason$reason)[reason]]
+  out[, reason_ko := setNames(reason_table$reason_ko, reason_table$reason)[reason]]
   out[, share := round(100 * n / sum(n), 1)]
   setcolorder(out, c("question", "reason", "reason_ko", "n", "share"))
   setorder(out, -n)
